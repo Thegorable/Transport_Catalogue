@@ -23,23 +23,18 @@ BOOST_AUTO_TEST_CASE(PrintingParsedData_Standart) {
     TransportCatalogue catalogue;
     reader.ApplyCommands(catalogue);
 
-    {
-        ostringstream os;
-        BOOST_CHECK_NO_THROW(ParseAndPrintStat(catalogue, lines_request[0], os));
-        cout << os.str();
-        BOOST_CHECK_EQUAL(os.str(), "Bus 256: 6 stops on route, "s
-        "5 unique stops, 4371.02 route length\n"s);
-    }
+    ifstream stream_out("E:/Programming/Training_projects/"
+    "Transport_Catalogue_tests_data/tsA_case0_output.txt");
     
-    {
+    for (size_t i = 0; i < lines_request.size(); i++) {
         ostringstream os;
-        BOOST_CHECK_NO_THROW(ParseAndPrintStat(catalogue, lines_request[1], os));
-        BOOST_CHECK_EQUAL(os.str(), "Bus 750: 5 stops on route, "s
-        "3 unique stops, 20939.5 route length\n"s);}
-    {
-        ostringstream os;
-        BOOST_CHECK_NO_THROW(ParseAndPrintStat(catalogue, lines_request[2], os));
-        BOOST_CHECK_EQUAL(os.str(), "Bus 751: not found\n"s);
+        BOOST_CHECK_NO_THROW(ParseAndPrintStat(catalogue, lines_request[i], os));
+        
+        string line_in = os.str();
+        string line_out;
+        getline(stream_out, line_out);
+        line_out += '\n';
+        BOOST_CHECK_EQUAL(line_in, line_out);
     }
 }
 

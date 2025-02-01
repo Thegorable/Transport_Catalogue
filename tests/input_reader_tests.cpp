@@ -11,6 +11,7 @@
 #include <algorithm>
 
 using namespace std;
+using namespace Geo;
 
 BOOST_AUTO_TEST_SUITE(InputRead_Testing);
 
@@ -25,8 +26,8 @@ BOOST_AUTO_TEST_CASE(Standart_Test) {
     TransportCatalogue catalogue;
     BOOST_CHECK_NO_THROW(reader.ApplyCommands(catalogue));
 
-    BOOST_CHECK_EQUAL(catalogue.GetCountAllbuses(), (size_t)2);
-    BOOST_CHECK_EQUAL(catalogue.GetCountAllStops(), (size_t)8);
+    BOOST_CHECK_EQUAL(catalogue.GetCountAllbuses(), (size_t)3);
+    BOOST_CHECK_EQUAL(catalogue.GetCountAllStops(), (size_t)10);
 
     BOOST_CHECK_EQUAL(catalogue.FindStop("Tolstopaltsevo"s), (Coordinates{55.611087, 37.208290}));
     BOOST_CHECK_EQUAL(catalogue.FindStop("Rasskazovka"s), (Coordinates{55.632761, 37.333324}));

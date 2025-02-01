@@ -1,22 +1,48 @@
 #include "stat_reader.h"
+#include "input_reader.h"
 #include <iomanip>
 #include <cmath>
+#include <algorithm>
 
 using namespace std;
 
-void ParseAndPrintStat(const TransportCatalogue& tansport_catalogue, string_view request,
-                       ostream& output) {
-    request = request.substr(4);
+void ParseAndPrintStat(const TransportCatalogue &transport_catalogue, string_view request,
+                       ostream &output)
+{
+    auto [command, data] = Parser::SplitToPair(request, ' ');
     
-    vector<string_view> route = tansport_catalogue.FindRoute(request);
-    output << "Bus "s <<  request << ": "s;
-    if (route.empty()) {
-        output << "not found\n"s;
+    if (command == "Bus") {
+        vector<string_view> route = transport_catalogue.FindRoute(data);
+        output << "Bus "s << data << ": "s;
+        if (route.empty()) {
+            output << "not found\n"s;
+            return;
+        }
+
+        output << transport_catalogue.GetCountStops(data) << " stops on route, "s;
+        output << transport_catalogue.GetCountUniqueStops(data) << " unique stops, "s;
+        output << round(transport_catalogue.GetRouteLength(data) 
+        * 1'000'000) / 1'000'000 << " route length\n"s;
         return;
     }
 
-    output << tansport_catalogue.GetCountStops(request) << " stops on route, "s;
-    output << tansport_catalogue.GetCountUniqueStops(request) << " unique stops, "s;
-    output << round(tansport_catalogue.GetRouteLength(request) * 1'000'000) / 1'000'000 
-    << " route length\n"s;
+    output << "Stop "s << data << ": "s;
+    if (!transport_catalogue.IsContainsStop(data)) {
+        output << "not found\n"s;
+            return;
+    }
+
+    vector<string_view> buses = transport_catalogue.FindBuses(data);
+    if (buses.empty()) {
+        output << "no buses\n"s;
+            return;
+    }
+    sort(buses.begin(), buses.end());
+
+    output << "buses"s;
+    string buses_list;
+    for (const string_view& bus : buses) {
+        output << ' ' << bus;
+    }
+    output << "\n"s;
 }

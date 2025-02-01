@@ -15,10 +15,20 @@ struct CommandDescription {
         return !operator bool();
     }
 
-    std::string command;      // Bus или Stop
-    std::string id;           // название маршрута/автобуса или остановки
-    std::string description;  // Маршрут или координаты
+    std::string command;
+    std::string id;
+    std::string description;
 };
+
+namespace Parser {
+    Geo::Coordinates ParseCoordinates(std::string_view str);
+    std::string_view TrimSapces(std::string_view string);
+    std::vector<std::string_view> SplitToVector(std::string_view string, char devider);
+    std::pair<std::string_view, std::string_view> SplitToPair(std::string_view text, 
+    char devider);
+    std::vector<std::string_view> ParseRoute(std::string_view route);
+    CommandDescription ParseCommandDescription(std::string_view line);
+}
 
 class InputReader {
 public:

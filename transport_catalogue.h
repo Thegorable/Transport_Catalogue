@@ -9,6 +9,15 @@
 
 using namespace std::string_literals;
 
+struct Stop {
+	Stop() = default;
+	Stop(const string& name, Geo::Coordinates coords) : name_(name), coords_(coords) {}
+	Stop(string&& name, Geo::Coordinates coords) : name_(move(name)), coords_(coords) {}
+
+	std::string name_;
+	Geo::Coordinates coords_;
+};
+
 struct StringHasher {
 	using is_transparent = int;
 
@@ -62,14 +71,12 @@ class TransportCatalogue {
 public:
 	TransportCatalogue() = default;
 
-	void AddStop(const std::string& stop, Coordinates coordinates); // tested
-	void AddStop(std::string&& stop, Coordinates coordinates); // tested
+	void AddStop(const std::string& stop, Geo::Coordinates coordinates); // tested
+	void AddStop(std::string&& stop, Geo::Coordinates coordinates); // tested
 
 	void AddRoute(const std::string& bus, const std::vector<std::string>& route); // tested
 	void AddRoute(const std::string& bus, const std::vector<std::string_view>& route);
 
-	inline size_t GetCountStops(const std::string& bus) const 
-	{return buses_.at(bus).size(); } // Not needs tests
 	inline size_t GetCountStops(const std::string_view& bus) const {
 		auto it = buses_.find(bus); 
 		if (it == buses_.end()) {
@@ -79,14 +86,11 @@ public:
 		return it->second.size();
 	}
 
-	inline size_t GetCountAllStops() const {return stops_.size(); } // Not needs tests
-	inline size_t GetCountAllbuses() const {return buses_.size(); } // Not needs tests
+	inline size_t GetCountAllStops() const {return stops_.size(); }
+	inline size_t GetCountAllbuses() const {return buses_.size(); }
 
 	size_t GetCountUniqueStops(const std::string_view& bus) const; // tested
-	size_t GetCountUniqueStops(const std::string& bus) const; // tested
-
 	double GetRouteLength(const std::string_view& bus) const; // tested
-	double GetRouteLength(const std::string& bus) const; // tested
 
 	inline std::vector<std::string_view> FindRoute(const std::string_view& bus) const {
 		auto it = buses_.find(bus); 
@@ -96,10 +100,12 @@ public:
 
 		return it->second;
 	}
-	inline std::vector<std::string_view> FindRoute(const std::string& bus) const
-	{ return FindRoute(std::string_view(bus)); }
 
-	inline Coordinates FindStop(const std::string_view& stop) const {
+	inline bool IsContainsBus(const std::string_view& bus) const {
+		return buses_.contains(bus);
+	}
+
+	inline Geo::Coordinates FindStop(const std::string_view& stop) const {
 		auto it = stops_.find(stop); 
 		if (it == stops_.end()) {
 			return {};
@@ -107,11 +113,17 @@ public:
 
 		return it->second;
 	}
-	inline Coordinates FindStop(const std::string& stop) const
+	inline Geo::Coordinates FindStop(const std::string& stop) const
 	{ return FindStop(std::string_view(stop)); }
 
+	inline bool IsContainsStop(const std::string_view& stop) const {
+		return stops_.contains(stop);
+	}
+
+	std::vector<std::string_view> FindBuses(const std::string_view& bus) const;
+
 protected:
-	std::unordered_map<std::string, Coordinates, StringHasher, StringComparator> stops_;
+	std::unordered_map<std::string, Geo::Coordinates, StringHasher, StringComparator> stops_;
 	std::unordered_map<std::string, std::vector<std::string_view>, 
 	StringHasher, StringComparator> buses_;
 

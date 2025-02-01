@@ -5,6 +5,7 @@
 #include "../transport_catalogue.h"
 
 using namespace std;
+using namespace Geo;
 
 class TestableTransportCatalogue : public TransportCatalogue {
 public:

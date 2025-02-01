@@ -1,16 +1,17 @@
 #include "transport_catalogue.h"
 #include <unordered_set>
+#include <algorithm>
 
 using namespace std;
 
-void TransportCatalogue::AddStop(const string &stop, Coordinates coordinates) {
+void TransportCatalogue::AddStop(const string &stop, Geo::Coordinates coordinates) {
     if (stops_.contains(stop)) {
         throw invalid_argument("Attempt to add existing stop: "s + stop + '\n');
     }
     stops_[stop] = coordinates;
 }
 
-void TransportCatalogue::AddStop(string &&stop, Coordinates coordinates) {
+void TransportCatalogue::AddStop(string &&stop, Geo::Coordinates coordinates) {
     if (stops_.contains(stop)) {
         throw invalid_argument("Attempt to add existing stop: "s + stop + '\n');
     }
@@ -52,10 +53,6 @@ size_t TransportCatalogue::GetCountUniqueStops(const string_view &bus) const {
     return unique_stops.size();
 }
 
-size_t TransportCatalogue::GetCountUniqueStops(const string& bus) const {
-    return GetCountUniqueStops(string_view(bus));
-}
-
 double TransportCatalogue::GetRouteLength(const string_view& bus) const {
     auto it = buses_.find(bus);
     if (it == buses_.end()) {
@@ -73,10 +70,6 @@ double TransportCatalogue::GetRouteLength(const string_view& bus) const {
     return sum;
 }
 
-double TransportCatalogue::GetRouteLength(const string& bus) const {
-    return GetRouteLength(string_view(bus));
-}
-
 pair<bool, vector<string_view>> TransportCatalogue::IsContainsFullRoute(
     const vector<string_view> &route) const {
         
@@ -90,7 +83,19 @@ pair<bool, vector<string_view>> TransportCatalogue::IsContainsFullRoute(
     return {result.empty(), result};
 }
 
+std::vector<std::string_view> TransportCatalogue::FindBuses(const std::string_view& bus) const {
+    std::vector<std::string_view> buses;
+    
+    for (auto& [route, stops] : buses_) {
+        if (find(stops.begin(), stops.end(), bus) != stops.end()) {
+            buses.push_back(route);
+        }
+    }
+    
+    return buses;
+}
+
 pair<bool, std::vector<std::string_view>> TransportCatalogue::IsContainsFullRoute(
     const vector<string> &route) const {
-        return IsContainsFullRoute(vector<string_view>(route.begin(), route.end()));
+    return IsContainsFullRoute(vector<string_view>(route.begin(), route.end()));
 }

@@ -12,7 +12,6 @@
                 "${fileDirname}\\input_reader.cpp",
                 "${fileDirname}\\stat_reader.cpp",
                 "${fileDirname}\\transport_catalogue.cpp",
-                "${fileDirname}\\parser.cpp",
                 "${fileDirname}\\main.cpp",
                 "${fileDirname}\\tests\\TransportCatalogue_tests.cpp",
                 "${fileDirname}\\tests\\input_reader_tests.cpp",
