@@ -14,8 +14,9 @@ namespace Geo {
         Coordinates(const Coordinates& coord) : lat(coord.lat), lng(coord.lng) {}
         Coordinates(Coordinates&& coord) : lat(coord.lat), lng(coord.lng) {}
 
-        double lat;
-        double lng;
+        double lat = 0.0;
+        double lng = 0.0;
+        
         bool operator==(const Coordinates& other) const {
             return IsEqualDouble(lat, other.lat) && IsEqualDouble(lng, other.lng);
         }

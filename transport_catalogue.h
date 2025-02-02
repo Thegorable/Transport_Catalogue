@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <sstream>
 #include <stdexcept>
+#include <forward_list>
 
 #include "geo.h"
 
@@ -11,43 +12,29 @@ using namespace std::string_literals;
 
 struct Stop {
 	Stop() = default;
-	Stop(const string& name, Geo::Coordinates coords) : name_(name), coords_(coords) {}
-	Stop(string&& name, Geo::Coordinates coords) : name_(move(name)), coords_(coords) {}
+	Stop(const std::string& name) : name_(name) {}
+	Stop(const std::string& name, Geo::Coordinates coords) : name_(name), coords_(coords) {}
+	Stop(std::string&& name, Geo::Coordinates coords) : name_(move(name)), coords_(coords) {}
+
+	bool IsEmpty() const {return name_.empty(); }
 
 	std::string name_;
 	Geo::Coordinates coords_;
-};
 
-struct StringHasher {
-	using is_transparent = int;
-
-	std::size_t operator() (const std::string& str) const {
-		return std::hash<std::string> {} (str);
-	}
-
-	std::size_t operator() (const std::string_view& str) const {
-		return std::hash<std::string_view> {} (str);
+	bool operator == (const Stop& other) {
+		return (this->name_ == other.name_ && this->coords_ == other.coords_);
 	}
 };
 
-struct StringComparator {
-	using is_transparent = int;
+struct Bus {
+	Bus() = default;
+	Bus(const std::string& name, const std::vector<Stop*>& route) : name_(name), route_(route) {}
+	Bus(std::string&& name, std::vector<Stop*>&& route) : name_(move(name)), route_(move(route)) {}
 
-	bool operator () (const std::string& l, const std::string& r) const {
-		return l == r;
-	}
+	bool IsEmpty() const {return route_.empty(); }
 
-	bool operator () (const std::string_view& l, const std::string_view& r) const {
-		return l == r;
-	}
-
-	bool operator () (const std::string& l, const std::string_view& r) const {
-		return l == r;
-	}
-
-	bool operator () (const std::string_view& l, const std::string& r) const {
-		return l == r;
-	}
+	std::string name_;
+	std::vector<Stop*> route_;
 };
 
 template <typename T>
@@ -71,61 +58,58 @@ class TransportCatalogue {
 public:
 	TransportCatalogue() = default;
 
-	void AddStop(const std::string& stop, Geo::Coordinates coordinates); // tested
-	void AddStop(std::string&& stop, Geo::Coordinates coordinates); // tested
+	void AddStop(const std::string& stop, Geo::Coordinates coordinates);
+	void AddStop(std::string&& stop, Geo::Coordinates coordinates);
 
-	void AddRoute(const std::string& bus, const std::vector<std::string>& route); // tested
-	void AddRoute(const std::string& bus, const std::vector<std::string_view>& route);
+	void AddRoute(const std::string_view& bus, const std::vector<std::string>& route);
+	void AddRoute(const std::string_view& bus, const std::vector<std::string_view>& route);
 
 	inline size_t GetCountStops(const std::string_view& bus) const {
-		auto it = buses_.find(bus); 
-		if (it == buses_.end()) {
-			throw std::out_of_range("The element "s + std::string(bus) + " doesn't exists"s);
-		}
-
-		return it->second.size();
+		return buses_ptrs_.at(bus)->route_.size();
 	}
 
-	inline size_t GetCountAllStops() const {return stops_.size(); }
-	inline size_t GetCountAllbuses() const {return buses_.size(); }
+	inline size_t GetCountAllStops() const {return stops_ptrs_.size(); }
+	inline size_t GetCountAllbuses() const {return buses_ptrs_.size(); }
 
-	size_t GetCountUniqueStops(const std::string_view& bus) const; // tested
-	double GetRouteLength(const std::string_view& bus) const; // tested
+	size_t GetCountUniqueStops(const std::string_view& bus) const;
+	double GetRouteLength(const std::string_view& bus) const;
 
-	inline std::vector<std::string_view> FindRoute(const std::string_view& bus) const {
-		auto it = buses_.find(bus); 
-		if (it == buses_.end()) {
-			return {};
+	inline const Bus& FindBus(const std::string_view& bus) const {
+		if (!buses_ptrs_.contains(bus)) {
+			return empty_bus_;
 		}
-
-		return it->second;
+		
+		return *buses_ptrs_.at(bus);
 	}
 
 	inline bool IsContainsBus(const std::string_view& bus) const {
-		return buses_.contains(bus);
+		return buses_ptrs_.contains(bus);
 	}
 
-	inline Geo::Coordinates FindStop(const std::string_view& stop) const {
-		auto it = stops_.find(stop); 
-		if (it == stops_.end()) {
-			return {};
+	inline const Stop& FindStop(const std::string_view& stop) const {
+		if (!stops_ptrs_.contains(stop)) {
+			return empty_stop_;
 		}
 
-		return it->second;
+		return *stops_ptrs_.at(stop);
 	}
-	inline Geo::Coordinates FindStop(const std::string& stop) const
+	inline const Stop& FindStop(const std::string& stop) const
 	{ return FindStop(std::string_view(stop)); }
 
 	inline bool IsContainsStop(const std::string_view& stop) const {
-		return stops_.contains(stop);
+		return stops_ptrs_.contains(stop);
 	}
 
-	std::vector<std::string_view> FindBuses(const std::string_view& bus) const;
+	std::vector<std::string_view> FindBuses(const std::string_view& stop) const;
 
 protected:
-	std::unordered_map<std::string, Geo::Coordinates, StringHasher, StringComparator> stops_;
-	std::unordered_map<std::string, std::vector<std::string_view>, 
-	StringHasher, StringComparator> buses_;
+	std::forward_list<Stop> stops_;
+	std::forward_list<Bus> buses_;
+	std::unordered_map<std::string_view, Stop*> stops_ptrs_;
+	std::unordered_map<std::string_view, Bus*> buses_ptrs_;
+
+	Bus empty_bus_;
+	Stop empty_stop_;
 
 	std::pair<bool, std::vector<std::string_view>> IsContainsFullRoute(
 		const std::vector<std::string>& route) const;

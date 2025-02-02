@@ -5,22 +5,24 @@
 using namespace std;
 
 void TransportCatalogue::AddStop(const string &stop, Geo::Coordinates coordinates) {
-    if (stops_.contains(stop)) {
+    if (stops_ptrs_.contains(stop)) {
         throw invalid_argument("Attempt to add existing stop: "s + stop + '\n');
     }
-    stops_[stop] = coordinates;
+    Stop& new_stop_ref = stops_.emplace_front(stop, coordinates);
+    stops_ptrs_[new_stop_ref.name_] = &new_stop_ref;
 }
 
 void TransportCatalogue::AddStop(string &&stop, Geo::Coordinates coordinates) {
-    if (stops_.contains(stop)) {
+    if (stops_ptrs_.contains(stop)) {
         throw invalid_argument("Attempt to add existing stop: "s + stop + '\n');
     }
-    stops_[move(stop)] = coordinates;
+    Stop& new_stop_ref = stops_.emplace_front(move(stop), coordinates);
+    stops_ptrs_[new_stop_ref.name_] = &new_stop_ref;
 }
 
-void TransportCatalogue::AddRoute(const string &bus, const vector<std::string_view> &route) {
-    if (buses_.contains(bus)) {
-        throw invalid_argument("Attempt to add existing bus: "s + bus + '\n');
+void TransportCatalogue::AddRoute(const string_view &bus, const vector<std::string_view> &route) {
+    if (buses_ptrs_.contains(bus)) {
+        throw invalid_argument("Attempt to add existing bus: "s + string(bus) + '\n');
     }
 
     auto result = IsContainsFullRoute(route); 
@@ -29,45 +31,53 @@ void TransportCatalogue::AddRoute(const string &bus, const vector<std::string_vi
         VectorToString(result.second) + '\n');
     }
 
-    vector<string_view> new_route;
+    vector<Stop*> new_route;
     new_route.reserve(route.size());
-    for (auto& stop : route) {
-        auto it = stops_.find(stop);
-        new_route.push_back(it->first);
+    for (const string_view& stop : route) {
+        Stop* stop_ptr = stops_ptrs_.at(stop);
+        new_route.emplace_back(stop_ptr);
     }
 
-    buses_[bus] = move(new_route);
+    Bus& new_bus = buses_.emplace_front(string(bus), move(new_route));
+    buses_ptrs_[new_bus.name_] = &new_bus;
 }
 
-void TransportCatalogue::AddRoute(const string &bus, const vector<std::string> &route) {
+void TransportCatalogue::AddRoute(const string_view &bus, const vector<std::string> &route) {
     AddRoute(bus, vector<string_view> (route.begin(), route.end()));
 }
 
 size_t TransportCatalogue::GetCountUniqueStops(const string_view &bus) const {
-    auto it = buses_.find(bus);
-    if (it == buses_.end()) {
-        throw out_of_range("The element "s + string(bus) + " doesn't exists");
-    }
-    auto& route = it->second;
-    unordered_set<string_view> unique_stops(route.begin(), route.end());
+    const Bus* bus_ptr = buses_ptrs_.at(bus);
+    auto& route = bus_ptr->route_;
+    unordered_set<Stop*> unique_stops(route.begin(), route.end());
     return unique_stops.size();
 }
 
 double TransportCatalogue::GetRouteLength(const string_view& bus) const {
-    auto it = buses_.find(bus);
-    if (it == buses_.end()) {
-        throw out_of_range("The element "s + string(bus) + " doesn't exists");
-    }
-
-    const vector<string_view>& buses_str = it->second;
+    const Bus* bus_ptr = buses_ptrs_.at(bus);
+    const vector<Stop*>& route = bus_ptr->route_;
     double sum = 0.0;
-    for (size_t i = 1; i < buses_str.size(); i++) {
-        auto& prev = stops_.find(buses_str.at(i - 1))->second;
-        auto& cur = stops_.find(buses_str.at(i))->second;
+    for (size_t i = 1; i < route.size(); i++) {
+        auto& prev = stops_ptrs_.at(route.at(i - 1)->name_)->coords_;
+        auto& cur = stops_ptrs_.at(route.at(i)->name_)->coords_;
         sum += ComputeDistance(prev, cur);
     }
 
     return sum;
+}
+
+std::vector<std::string_view> TransportCatalogue::FindBuses(const std::string_view& stop) const {
+    std::vector<std::string_view> buses;
+    
+    for (auto& [bus_name, bus] : buses_ptrs_) {
+        auto& route = bus->route_;
+        auto predicat = [&stop](Stop* l) {return l->name_ == stop;};
+        if (find_if(route.begin(), route.end(), predicat) != route.end()) {
+            buses.push_back(bus_name);
+        }
+    }
+    
+    return buses;
 }
 
 pair<bool, vector<string_view>> TransportCatalogue::IsContainsFullRoute(
@@ -75,24 +85,12 @@ pair<bool, vector<string_view>> TransportCatalogue::IsContainsFullRoute(
         
         std::vector<std::string_view> result;
         for (auto& stop : route) {
-            if (!stops_.contains(stop)) {
+            if (!stops_ptrs_.contains(stop)) {
                 result.push_back(stop);
             }
         }
 
     return {result.empty(), result};
-}
-
-std::vector<std::string_view> TransportCatalogue::FindBuses(const std::string_view& bus) const {
-    std::vector<std::string_view> buses;
-    
-    for (auto& [route, stops] : buses_) {
-        if (find(stops.begin(), stops.end(), bus) != stops.end()) {
-            buses.push_back(route);
-        }
-    }
-    
-    return buses;
 }
 
 pair<bool, std::vector<std::string_view>> TransportCatalogue::IsContainsFullRoute(

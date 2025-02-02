@@ -29,21 +29,25 @@ BOOST_AUTO_TEST_CASE(Standart_Test) {
     BOOST_CHECK_EQUAL(catalogue.GetCountAllbuses(), (size_t)3);
     BOOST_CHECK_EQUAL(catalogue.GetCountAllStops(), (size_t)10);
 
-    BOOST_CHECK_EQUAL(catalogue.FindStop("Tolstopaltsevo"s), (Coordinates{55.611087, 37.208290}));
-    BOOST_CHECK_EQUAL(catalogue.FindStop("Rasskazovka"s), (Coordinates{55.632761, 37.333324}));
-    BOOST_CHECK_EQUAL(catalogue.FindStop("Biryulyovo Passazhirskaya"s), (Coordinates{55.580999, 37.659164}));
+    BOOST_CHECK(catalogue.FindStop("Tolstopaltsevo"s) == 
+    Stop("Tolstopaltsevo"s, Coordinates{55.611087, 37.208290}));
+    BOOST_CHECK(catalogue.FindStop("Rasskazovka"s) == 
+    Stop("Rasskazovka"s, Coordinates{55.632761, 37.333324}));
+    BOOST_CHECK(catalogue.FindStop("Biryulyovo Passazhirskaya"s) == 
+    Stop("Biryulyovo Passazhirskaya"s, Coordinates{55.580999, 37.659164}));
 
     BOOST_CHECK_EQUAL(catalogue.GetCountStops("750"s), size_t(5));
     BOOST_CHECK_EQUAL(catalogue.GetCountUniqueStops("750"s), size_t(3));
-    BOOST_CHECK((catalogue.FindRoute("750"s) == 
-    vector<string_view>{"Tolstopaltsevo"sv, "Marushkino"sv, "Rasskazovka"sv,
-    "Marushkino"sv, "Tolstopaltsevo"sv}));
+    
+    BOOST_CHECK((VecPtrToVecNames((catalogue.FindBus("750"s).route_)) == 
+    vector<string>{"Tolstopaltsevo"s, "Marushkino"s, "Rasskazovka"s,
+    "Marushkino"s, "Tolstopaltsevo"s}));
 
     BOOST_CHECK_EQUAL(catalogue.GetCountStops("256"s), size_t(6));
     BOOST_CHECK_EQUAL(catalogue.GetCountUniqueStops("256"s), size_t(5));
-    BOOST_CHECK((catalogue.FindRoute("256"s) == 
-    vector<string_view>{"Biryulyovo Zapadnoye"sv, "Biryusinka"sv, "Universam"sv,
-    "Biryulyovo Tovarnaya"sv, "Biryulyovo Passazhirskaya"sv, "Biryulyovo Zapadnoye"sv}));
+    BOOST_CHECK((VecPtrToVecNames(catalogue.FindBus("256"s).route_) == 
+    vector<string>{"Biryulyovo Zapadnoye"s, "Biryusinka"s, "Universam"s,
+    "Biryulyovo Tovarnaya"s, "Biryulyovo Passazhirskaya"s, "Biryulyovo Zapadnoye"s}));
 }
 
 BOOST_AUTO_TEST_SUITE_END();

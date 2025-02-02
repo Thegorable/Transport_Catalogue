@@ -26,17 +26,15 @@ BOOST_AUTO_TEST_CASE(AddStop_Testing) {
     BOOST_CHECK_EQUAL(catalogue.GetCountAllStops(), (size_t)0);
     BOOST_CHECK_NO_THROW(catalogue.AddStop(name_1, coord_1));
 
-    BOOST_CHECK_EQUAL(catalogue.GetCountAllStops(), 1);
-    BOOST_TEST((catalogue.FindStop(name_1) == Coordinates(0.1, 0.1)));
+    BOOST_CHECK_EQUAL(catalogue.GetCountAllStops(), (size_t)1);
+    BOOST_TEST((catalogue.FindStop(name_1) == Stop(name_1, Coordinates(0.1, 0.1)) ));
 
     catalogue.AddStop(name_2, coord_2);
     catalogue.AddStop(name_3, coord_3);
 
     BOOST_CHECK_EQUAL(catalogue.GetCountAllStops(), (size_t)3);
-    BOOST_TEST((catalogue.FindStop(name_2) == Coordinates(0.2, 0.2)));
-    BOOST_TEST((catalogue.FindStop(name_3) == Coordinates(0.3, 0.3)));
-
-    BOOST_CHECK_THROW(catalogue.AddStop(name_3, coord_3), invalid_argument);
+    BOOST_TEST((catalogue.FindStop(name_2) == Stop(name_2, Coordinates(0.2, 0.2)) ));
+    BOOST_TEST((catalogue.FindStop(name_3) == Stop(name_3, Coordinates(0.3, 0.3)) ));
 };
 
 BOOST_AUTO_TEST_CASE(AddStop_Rvalue_Testing) {
@@ -50,14 +48,17 @@ BOOST_AUTO_TEST_CASE(AddStop_Rvalue_Testing) {
     BOOST_TEST(name_1.empty());
 
     BOOST_TEST(catalogue.GetCountAllStops() == (size_t)1);
-    BOOST_TEST((catalogue.FindStop("Stop_1"s) == Coordinates({0.1, 0.1})));
+    BOOST_TEST((catalogue.FindStop("Stop_1"s) == 
+    Stop("Stop_1"s, Coordinates(0.1, 0.1))));
 
     catalogue.AddStop("Stop_2"s, {0.2, 0.2});
     catalogue.AddStop("Stop_3"s, {0.3, 0.3});
 
     BOOST_CHECK_EQUAL(catalogue.GetCountAllStops(), (size_t)3);
-    BOOST_TEST((catalogue.FindStop("Stop_2"s) == Coordinates(0.2, 0.2)));
-    BOOST_TEST((catalogue.FindStop("Stop_3"s) == Coordinates(0.3, 0.3)));
+    BOOST_TEST((catalogue.FindStop("Stop_2"s) == 
+    Stop("Stop_2"s, Coordinates(0.2, 0.2) )));
+    BOOST_TEST((catalogue.FindStop("Stop_3"s) == 
+    Stop("Stop_3"s, Coordinates(0.3, 0.3) )));
 
     BOOST_CHECK_THROW(catalogue.AddStop("Stop_3"s, {0.3, 0.3}), invalid_argument);
 }
@@ -89,7 +90,7 @@ BOOST_AUTO_TEST_CASE(IsContainsFullRoute_MissingStops)
 
     BOOST_CHECK(!result.first);
     BOOST_REQUIRE_EQUAL(result.second.size(), (size_t)1);
-    BOOST_CHECK_EQUAL(result.second[0], "Stop3");
+    BOOST_CHECK(result.second[0] == "Stop3"s);
 }
 
 BOOST_AUTO_TEST_CASE(IsContainsFullRoute_EmptyRoute)
@@ -119,11 +120,17 @@ BOOST_AUTO_TEST_CASE(AddBus_Testing) {
     vector<string>({"Stop_1"s, "Stop_2"s, "Stop_3"s})));
 
     BOOST_CHECK_EQUAL(catalogue.GetCountAllbuses(), (size_t)2);
+
+    Bus bus_1 = catalogue.FindBus("Bus_1"s);
+    Bus bus_2 = catalogue.FindBus("Bus_2"s);
     
-    BOOST_CHECK((catalogue.FindRoute("Bus_1"s) == 
-    vector<string_view>({"Stop_1"s, "Stop_2"s, "Stop_1"s})));
-    BOOST_CHECK((catalogue.FindRoute("Bus_2"s) == 
-    vector<string_view>({"Stop_1"s, "Stop_2"s, "Stop_3"s})));
+    BOOST_CHECK(bus_1.name_ == "Bus_1");
+    BOOST_CHECK(bus_2.name_ == "Bus_2");
+
+    BOOST_CHECK(( VecPtrToVecNames(bus_1.route_) == 
+    vector<string>({"Stop_1"s, "Stop_2"s, "Stop_1"s})));
+    BOOST_CHECK(( VecPtrToVecNames(bus_2.route_) == 
+    vector<string>({"Stop_1"s, "Stop_2"s, "Stop_3"s})));
 
     BOOST_CHECK_THROW(catalogue.AddRoute("Bus_3"s, 
     vector<string>({"Stop_1"s, "Stop_2"s, "Stop_5"s})), invalid_argument);

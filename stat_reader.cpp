@@ -12,9 +12,9 @@ void ParseAndPrintStat(const TransportCatalogue &transport_catalogue, string_vie
     auto [command, data] = Parser::SplitToPair(request, ' ');
     
     if (command == "Bus") {
-        vector<string_view> route = transport_catalogue.FindRoute(data);
+        const Bus& bus = transport_catalogue.FindBus(data);
         output << "Bus "s << data << ": "s;
-        if (route.empty()) {
+        if (bus.IsEmpty()) {
             output << "not found\n"s;
             return;
         }
