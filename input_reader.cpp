@@ -91,7 +91,8 @@ namespace Parser {
     }
 }
 
-void InputReader::ParseLine(string_view line) {
+void InputReader::ParseLine(string_view line)
+{
     auto command_description = Parser::ParseCommandDescription(line);
     if (command_description) {
         commands_.push_back(std::move(command_description));
@@ -111,5 +112,20 @@ void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) 
 
     for (auto& bus : buses) {
         catalogue.AddRoute(string(bus.first), bus.second);
+    }
+}
+
+void ReadInputAndApply(std::istream& in, TransportCatalogue& catalogue) {
+    int base_request_count;
+    in >> base_request_count >> ws;
+
+    {
+        InputReader reader;
+        for (int i = 0; i < base_request_count; ++i) {
+            string line;
+            getline(in, line);
+            reader.ParseLine(line);
+        }
+        reader.ApplyCommands(catalogue);
     }
 }

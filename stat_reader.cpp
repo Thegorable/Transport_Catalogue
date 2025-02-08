@@ -12,37 +12,48 @@ void ParseAndPrintStat(const TransportCatalogue &transport_catalogue, string_vie
     auto [command, data] = Parser::SplitToPair(request, ' ');
     
     if (command == "Bus") {
-        const Bus& bus = transport_catalogue.FindBus(data);
+        const Bus* bus = transport_catalogue.FindBus(data);
         output << "Bus "s << data << ": "s;
-        if (bus.IsEmpty()) {
+        if (bus == nullptr) {
             output << "not found\n"s;
             return;
         }
 
-        output << transport_catalogue.GetCountStops(data) << " stops on route, "s;
-        output << transport_catalogue.GetCountUniqueStops(data) << " unique stops, "s;
-        output << round(transport_catalogue.GetRouteLength(data) 
-        * 1'000'000) / 1'000'000 << " route length\n"s;
+        RouteStatistics statistics = transport_catalogue.GetRouteStatistics(data);
+        output << statistics.stops_count_ << " stops on route, "s;
+        output << statistics.unique_stops_count_ << " unique stops, "s;
+        output << statistics.route_length << " route length\n"s;
         return;
     }
 
     output << "Stop "s << data << ": "s;
-    if (!transport_catalogue.IsContainsStop(data)) {
+    if (transport_catalogue.FindStop(data) == nullptr) {
         output << "not found\n"s;
             return;
     }
 
-    vector<string_view> buses = transport_catalogue.FindBuses(data);
-    if (buses.empty()) {
+    const set<Bus*>* buses = transport_catalogue.FindBuses(data);
+    if (buses == nullptr) {
         output << "no buses\n"s;
             return;
     }
-    sort(buses.begin(), buses.end());
 
     output << "buses"s;
     string buses_list;
-    for (const string_view& bus : buses) {
-        output << ' ' << bus;
+    for (auto bus_ptr : *buses) {
+        output << ' ' << bus_ptr->name_;
     }
     output << "\n"s;
+}
+
+void ParseFullRequest(const TransportCatalogue &tansport_catalogue, istream& in, 
+    ostream &output) {
+
+    int stat_request_count;
+    in >> stat_request_count >> ws;
+    for (int i = 0; i < stat_request_count; ++i) {
+        string line;
+        getline(in, line);
+        ParseAndPrintStat(tansport_catalogue, line, output);
+    }
 }

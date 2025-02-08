@@ -12,23 +12,9 @@ void TransportCatalogue::AddStop(const string &stop, Geo::Coordinates coordinate
     stops_ptrs_[new_stop_ref.name_] = &new_stop_ref;
 }
 
-void TransportCatalogue::AddStop(string &&stop, Geo::Coordinates coordinates) {
-    if (stops_ptrs_.contains(stop)) {
-        throw invalid_argument("Attempt to add existing stop: "s + stop + '\n');
-    }
-    Stop& new_stop_ref = stops_.emplace_front(move(stop), coordinates);
-    stops_ptrs_[new_stop_ref.name_] = &new_stop_ref;
-}
-
-void TransportCatalogue::AddRoute(const string_view &bus, const vector<std::string_view> &route) {
+void TransportCatalogue::AddRoute(const string &bus, const vector<std::string_view> &route) {
     if (buses_ptrs_.contains(bus)) {
-        throw invalid_argument("Attempt to add existing bus: "s + string(bus) + '\n');
-    }
-
-    auto result = IsContainsFullRoute(route); 
-    if (!result.first) {
-        throw invalid_argument("Attempt to add route with not existing stops: "s + 
-        VectorToString(result.second) + '\n');
+        throw invalid_argument("Attempt to add existing bus: "s + bus + '\n');
     }
 
     vector<Stop*> new_route;
@@ -38,22 +24,50 @@ void TransportCatalogue::AddRoute(const string_view &bus, const vector<std::stri
         new_route.emplace_back(stop_ptr);
     }
 
-    Bus& new_bus = buses_.emplace_front(string(bus), move(new_route));
+    Bus& new_bus = buses_.emplace_front(bus, move(new_route));
+    for (auto& stop : new_bus.route_) {
+        stops_routes_ptrs_[stop->name_].insert(&new_bus);
+    }
     buses_ptrs_[new_bus.name_] = &new_bus;
 }
 
-void TransportCatalogue::AddRoute(const string_view &bus, const vector<std::string> &route) {
-    AddRoute(bus, vector<string_view> (route.begin(), route.end()));
+RouteStatistics TransportCatalogue::GetRouteStatistics(string_view bus) const {
+    const vector<Stop*>& route = buses_ptrs_.at(bus)->route_;
+    unordered_set<Stop*> unique_stops_(route.begin(), route.end());
+
+    return {route.size(), 
+        unique_stops_.size(), 
+        GetRouteLength(bus) };
 }
 
-size_t TransportCatalogue::GetCountUniqueStops(const string_view &bus) const {
-    const Bus* bus_ptr = buses_ptrs_.at(bus);
-    auto& route = bus_ptr->route_;
-    unordered_set<Stop*> unique_stops(route.begin(), route.end());
-    return unique_stops.size();
+const Bus* TransportCatalogue::FindBus(string_view bus) const {
+    auto result = buses_ptrs_.find(bus);
+    if (result == buses_ptrs_.end()) {
+        return nullptr;
+    }
+    
+    return result->second;
 }
 
-double TransportCatalogue::GetRouteLength(const string_view& bus) const {
+const Stop* TransportCatalogue::FindStop(string_view stop) const {
+    auto result = stops_ptrs_.find(stop);
+    if (result == stops_ptrs_.end()) {
+        return nullptr;
+    }
+
+    return result->second;
+}
+
+const set<Bus*>* TransportCatalogue::FindBuses(string_view stop) const {
+    auto it = stops_routes_ptrs_.find(stop);
+    if (it == stops_routes_ptrs_.end()) {
+        return nullptr;
+    }
+
+    return &it->second;
+}
+
+double TransportCatalogue::GetRouteLength(string_view bus) const {
     const Bus* bus_ptr = buses_ptrs_.at(bus);
     const vector<Stop*>& route = bus_ptr->route_;
     double sum = 0.0;
@@ -64,36 +78,4 @@ double TransportCatalogue::GetRouteLength(const string_view& bus) const {
     }
 
     return sum;
-}
-
-std::vector<std::string_view> TransportCatalogue::FindBuses(const std::string_view& stop) const {
-    std::vector<std::string_view> buses;
-    
-    for (auto& [bus_name, bus] : buses_ptrs_) {
-        auto& route = bus->route_;
-        auto predicat = [&stop](Stop* l) {return l->name_ == stop;};
-        if (find_if(route.begin(), route.end(), predicat) != route.end()) {
-            buses.push_back(bus_name);
-        }
-    }
-    
-    return buses;
-}
-
-pair<bool, vector<string_view>> TransportCatalogue::IsContainsFullRoute(
-    const vector<string_view> &route) const {
-        
-        std::vector<std::string_view> result;
-        for (auto& stop : route) {
-            if (!stops_ptrs_.contains(stop)) {
-                result.push_back(stop);
-            }
-        }
-
-    return {result.empty(), result};
-}
-
-pair<bool, std::vector<std::string_view>> TransportCatalogue::IsContainsFullRoute(
-    const vector<string> &route) const {
-    return IsContainsFullRoute(vector<string_view>(route.begin(), route.end()));
 }

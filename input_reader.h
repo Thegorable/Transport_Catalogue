@@ -2,6 +2,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <iostream>
 
 #include "geo.h"
 #include "transport_catalogue.h"
@@ -38,3 +39,5 @@ public:
 private:
     std::vector<CommandDescription> commands_;
 };
+
+void ReadInputAndApply(std::istream& in, TransportCatalogue& catalogue);
