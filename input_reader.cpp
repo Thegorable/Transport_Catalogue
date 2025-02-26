@@ -1,6 +1,7 @@
 #include "input_reader.h"
 
 #include <algorithm>
+#include <charconv>
 
 using namespace std;
 
@@ -81,13 +82,52 @@ namespace Parser {
                 string(line.substr(not_space, colon_pos - not_space)),
                 string(line.substr(colon_pos + 1))};
     }
-    std::pair<std::string_view, std::string_view> SplitToPair(std::string_view text, 
-    char devider) {
-        size_t pos_str = text.find_first_of(devider);
+
+    pair<string_view, string_view> SplitToPair(std::string_view text, 
+        string_view devider, int num_devider) {
+        size_t pos_str = text.find(devider);
+        int iter_num = 1;
+        
+        while ((iter_num < num_devider) && (pos_str != text.npos)) {
+            pos_str += devider.size();
+            pos_str = text.find(devider, pos_str);
+            ++iter_num;
+        }
+
+        if (pos_str == text.npos) {
+            return {text, {}};
+        }
+
         string_view first = text.substr(0, pos_str);
-        string_view second = text.substr(pos_str + 1, text.size());
+        string_view second = text.substr(pos_str + devider.size(), text.size());
 
         return {first, second};
+    }
+
+    pair<string_view, string_view> SplitToPair(const std::string_view& text, 
+        char devider, int num_devider) {
+        return SplitToPair(text, string_view(&devider, 1), num_devider);
+    }
+
+    std::vector<std::pair<string_view, uint32_t>> ParseDistances(string_view str) {
+        std::vector<std::pair<string_view, uint32_t>> result;
+        
+        auto parts = SplitToVector(str, ',');
+        
+        for (auto& part : parts) {            
+            auto [distance_part, stop_part] = SplitToPair(part, "m to "sv);          
+            
+            distance_part = TrimSapces(distance_part);
+            stop_part = TrimSapces(stop_part);
+            
+            uint32_t distance = 0;
+            auto conv_result = std::from_chars(distance_part.begin(), distance_part.end(), distance);
+            if (conv_result.ec == std::errc()) {
+                result.emplace_back(stop_part, distance);
+            }
+        }
+        
+        return result;
     }
 }
 
@@ -99,15 +139,28 @@ void InputReader::ParseLine(string_view line)
     }
 }
 
+
 void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) const {
+    using distances = vector<pair<string_view, uint32_t>>;
+
     vector<pair<string_view, vector<string_view>>> buses;
+    vector<pair<string_view, distances>> neghbor_stops_;
 
     for (const CommandDescription& com : commands_) {
         if (com.command == "Bus"s) {
-            buses.push_back({com.id, Parser::ParseRoute(com.description)});
+            buses.emplace_back(com.id, Parser::ParseRoute(com.description));
             continue;
         }
-        catalogue.AddStop(com.id, Parser::ParseCoordinates(com.description));
+
+        auto [coords_text, neighbor_stops_text] = Parser::SplitToPair(com.description, ',', 2);
+        neghbor_stops_.emplace_back(com.id, Parser::ParseDistances(neighbor_stops_text));
+        catalogue.AddStop(com.id, Parser::ParseCoordinates(coords_text));
+    }
+
+    for (auto& [stop_target, distances] : neghbor_stops_) {
+        for (auto& [stop_neighbor, distance] : distances) {
+            catalogue.AddNeighborStopDistance(stop_target, stop_neighbor, distance);
+        }
     }
 
     for (auto& bus : buses) {

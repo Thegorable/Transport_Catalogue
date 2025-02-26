@@ -4,7 +4,7 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:/dev/C++Libs/boost/boost_1_87_0"
+                "C:/dev/libs/simpletest"
             ],
             "defines": [
                 "_DEBUG",

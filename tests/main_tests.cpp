@@ -1,8 +1,7 @@
 #include "main_tests.h"
 #ifdef DEBUG
 
-#define BOOST_TEST_MODULE Transport_Catalogue_Testing
-#include <boost\test\unit_test.hpp>
+#include "simpletest.h"
 
 #include <fstream>
 #include <iostream>
@@ -21,6 +20,11 @@ vector<string> ReadCurrentLayerStream(ifstream& stream) {
         }
 
     return lines;
+}
+
+int main() {
+    TestFixture::ExecuteAllTests();
+    return 0;
 }
 
 #endif

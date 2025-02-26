@@ -15,26 +15,27 @@ void ParseAndPrintStat(const TransportCatalogue &transport_catalogue, string_vie
         const Bus* bus = transport_catalogue.FindBus(data);
         output << "Bus "s << data << ": "s;
         if (bus == nullptr) {
-            output << "not found\n"s;
+            output << "not found"s;
             return;
         }
 
         RouteStatistics statistics = transport_catalogue.GetRouteStatistics(data);
         output << statistics.stops_count_ << " stops on route, "s;
         output << statistics.unique_stops_count_ << " unique stops, "s;
-        output << statistics.route_length << " route length\n"s;
+        output << statistics.route_length << " route length, "s;
+        output << statistics.curvature_ << " curvature"s;
         return;
     }
 
     output << "Stop "s << data << ": "s;
     if (transport_catalogue.FindStop(data) == nullptr) {
-        output << "not found\n"s;
+        output << "not found"s;
             return;
     }
 
-    const set<Bus*>* buses = transport_catalogue.FindBuses(data);
+    const auto buses = transport_catalogue.FindBuses(data);
     if (buses == nullptr) {
-        output << "no buses\n"s;
+        output << "no buses"s;
             return;
     }
 
@@ -43,7 +44,6 @@ void ParseAndPrintStat(const TransportCatalogue &transport_catalogue, string_vie
     for (auto bus_ptr : *buses) {
         output << ' ' << bus_ptr->name_;
     }
-    output << "\n"s;
 }
 
 void ParseFullRequest(const TransportCatalogue &tansport_catalogue, istream& in, 
@@ -55,5 +55,8 @@ void ParseFullRequest(const TransportCatalogue &tansport_catalogue, istream& in,
         string line;
         getline(in, line);
         ParseAndPrintStat(tansport_catalogue, line, output);
+        if (i < stat_request_count - 1) {
+            output << '\n';
+        }
     }
 }

@@ -3,6 +3,7 @@
 #include <string_view>
 #include <vector>
 #include <iostream>
+#include <cstdint>
 
 #include "geo.h"
 #include "transport_catalogue.h"
@@ -23,10 +24,13 @@ struct CommandDescription {
 
 namespace Parser {
     Geo::Coordinates ParseCoordinates(std::string_view str);
+    std::vector<std::pair<std::string_view, uint32_t>> ParseDistances(std::string_view str);
     std::string_view TrimSapces(std::string_view string);
     std::vector<std::string_view> SplitToVector(std::string_view string, char devider);
     std::pair<std::string_view, std::string_view> SplitToPair(std::string_view text, 
-    char devider);
+    std::string_view devider, int num_devider = 1);
+    std::pair<std::string_view, std::string_view> SplitToPair(const std::string_view& text, 
+    char devider, int num_devider = 1);
     std::vector<std::string_view> ParseRoute(std::string_view route);
     CommandDescription ParseCommandDescription(std::string_view line);
 }
