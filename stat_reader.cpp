@@ -33,7 +33,7 @@ void ParseAndPrintStat(const TransportCatalogue &transport_catalogue, string_vie
             return;
     }
 
-    const auto buses = transport_catalogue.FindBuses(data);
+    const auto& buses = transport_catalogue.FindBuses(data);
     if (buses == nullptr) {
         output << "no buses"s;
             return;
@@ -41,7 +41,7 @@ void ParseAndPrintStat(const TransportCatalogue &transport_catalogue, string_vie
 
     output << "buses"s;
     string buses_list;
-    for (auto bus_ptr : *buses) {
+    for (auto& bus_ptr : *buses) {
         output << ' ' << bus_ptr->name_;
     }
 }

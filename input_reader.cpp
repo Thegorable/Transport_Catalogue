@@ -84,13 +84,13 @@ namespace Parser {
     }
 
     pair<string_view, string_view> SplitToPair(std::string_view text, 
-        string_view devider, int num_devider) {
-        size_t pos_str = text.find(devider);
+        string_view divider, int num_divider) {
+        size_t pos_str = text.find(divider);
         int iter_num = 1;
         
-        while ((iter_num < num_devider) && (pos_str != text.npos)) {
-            pos_str += devider.size();
-            pos_str = text.find(devider, pos_str);
+        while ((iter_num < num_divider) && (pos_str != text.npos)) {
+            pos_str += divider.size();
+            pos_str = text.find(divider, pos_str);
             ++iter_num;
         }
 
@@ -99,14 +99,14 @@ namespace Parser {
         }
 
         string_view first = text.substr(0, pos_str);
-        string_view second = text.substr(pos_str + devider.size(), text.size());
+        string_view second = text.substr(pos_str + divider.size(), text.size());
 
         return {first, second};
     }
 
     pair<string_view, string_view> SplitToPair(const std::string_view& text, 
-        char devider, int num_devider) {
-        return SplitToPair(text, string_view(&devider, 1), num_devider);
+        char divider, int num_divider) {
+        return SplitToPair(text, string_view(&divider, 1), num_divider);
     }
 
     std::vector<std::pair<string_view, uint32_t>> ParseDistances(string_view str) {
