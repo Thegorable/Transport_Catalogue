@@ -43,10 +43,10 @@ DEFINE_TEST_GF(AddBus_Testing, TransportCatalogue_Tests, ExceptionFixture) {
     vector<string> route_1({"Stop_1"s, "Stop_2"s, "Stop_1"s});
     vector<string> route_2({"Stop_1"s, "Stop_2"s, "Stop_3"s});
 
-    catalogue.AddRoute("Bus_1"s, 
+    catalogue.AddBus("Bus_1"s, 
     vector<string_view>(route_1.begin(), route_1.end()));
 
-    catalogue.AddRoute("Bus_2"s, 
+    catalogue.AddBus("Bus_2"s, 
     vector<string_view>(route_2.begin(), route_2.end()));
 
     const Bus* bus_1 = catalogue.FindBus("Bus_1"s);
@@ -74,7 +74,7 @@ DEFINE_TEST_G(GetCountUniqueStops_UniqueStopsOnly, TransportCatalogue_Tests)
     tc.AddNeighborStopDistance("Stop2"sv, "Stop3"sv, 100);
     tc.AddNeighborStopDistance("Stop3"sv, "Stop1"sv, 100);
     
-    tc.AddRoute("Bus1", 
+    tc.AddBus("Bus1", 
     vector<string_view>(str.begin(), str.end()));
 
     RouteStatistics stat = tc.GetRouteStatistics("Bus1"s);
@@ -90,7 +90,7 @@ DEFINE_TEST_G(GetCountUniqueStops_RepeatedStops, TransportCatalogue_Tests)
     tc.AddStop("Stop2", {59.9343, 30.3351});
     vector<string> str({"Stop1", "Stop2", "Stop1", "Stop2"});
 
-    tc.AddRoute("Bus1", 
+    tc.AddBus("Bus1", 
     vector<string_view>(str.begin(), str.end()));
 
     RouteStatistics stat = tc.GetRouteStatistics("Bus1"s);
@@ -104,7 +104,7 @@ DEFINE_TEST_G(GetCountUniqueStops_SingleStop, TransportCatalogue_Tests)
 
     tc.AddStop("Stop1", {55.7522, 37.6156});
 
-    tc.AddRoute("Bus1", 
+    tc.AddBus("Bus1", 
         vector<string_view>({"Stop1"sv}));
 
     RouteStatistics stat = tc.GetRouteStatistics("Bus1"s);
@@ -116,7 +116,7 @@ DEFINE_TEST_G(GetCountUniqueStops_EmptyRoute, TransportCatalogue_Tests)
 {
     TransportCatalogue_Testing tc;
 
-    tc.AddRoute("Bus1", vector<string_view>());
+    tc.AddBus("Bus1", vector<string_view>());
 
     RouteStatistics stat = tc.GetRouteStatistics("Bus1"s);
 
@@ -131,7 +131,7 @@ DEFINE_TEST_G(GetRouteLength_SimpleRoute, TransportCatalogue_Tests)
     tc.AddStop("Stop2", {1.0, 2.0});
     tc.AddStop("Stop3", {2.0, 2.0});
     vector<string> str({"Stop1", "Stop2", "Stop3"});
-    tc.AddRoute("Bus1", vector<string_view>(str.begin(), str.end()));
+    tc.AddBus("Bus1", vector<string_view>(str.begin(), str.end()));
 
     double route_length = tc.GetRouteLength("Bus1"s);
 
@@ -148,7 +148,7 @@ DEFINE_TEST_G(GetRouteLength_RouteWithRepeatedStops, TransportCatalogue_Tests)
     tc.AddStop("Stop1", {1.0, 1.0});
     tc.AddStop("Stop2", {1.0, 2.0});
     vector<string> str({"Stop1", "Stop2", "Stop1", "Stop2", "Stop1"});
-    tc.AddRoute("Bus1", vector<string_view>(str.begin(), str.end()));
+    tc.AddBus("Bus1", vector<string_view>(str.begin(), str.end()));
 
     double route_length = tc.GetRouteLength("Bus1"s);
 
@@ -170,7 +170,7 @@ DEFINE_TEST_G(GetRouteLength_ComplexRoute, TransportCatalogue_Tests)
     tc.AddStop("Stop4", {1.5, 2.0});
     vector<string> str({"Stop1", "Stop2", "Stop3", "Stop4",
                         "Stop3", "Stop2", "Stop1"});
-    tc.AddRoute("Bus1", vector<string_view>(str.begin(), str.end()));
+    tc.AddBus("Bus1", vector<string_view>(str.begin(), str.end()));
 
     double route_length = tc.GetRouteLength("Bus1"s);
 
@@ -190,7 +190,7 @@ DEFINE_TEST_G(GetRouteLength_SingleStopRoute, TransportCatalogue_Tests)
 
     tc.AddStop("Stop1", {1.0, 1.0});
     vector<string> str({"Stop1", "Stop1"});
-    tc.AddRoute("Bus1", vector<string_view>(str.begin(), str.end()));
+    tc.AddBus("Bus1", vector<string_view>(str.begin(), str.end()));
 
     double route_length = tc.GetRouteLength("Bus1"s);
 
@@ -201,7 +201,7 @@ DEFINE_TEST_G(GetRouteLength_EmptyRoute, TransportCatalogue_Tests)
 {
     TransportCatalogue_Testing tc;
 
-    tc.AddRoute("Bus1", vector<string_view>());
+    tc.AddBus("Bus1", vector<string_view>());
 
     double route_length = tc.GetRouteLength("Bus1"s);
 
@@ -281,7 +281,7 @@ DEFINE_TEST_G(GetRealRouteLength_SimpleRoute, TransportCatalogue_Tests) {
     catalogue.AddNeighborStopDistance("A"sv, "B"sv, 100);
     catalogue.AddNeighborStopDistance("B"sv, "C"sv, 200);
 
-    catalogue.AddRoute("Bus1", {"A", "B", "C"});
+    catalogue.AddBus("Bus1", {"A", "B", "C"});
 
     TEST_EQ(catalogue.GetRealRouteLength("Bus1"), 300);
 }
@@ -297,7 +297,7 @@ DEFINE_TEST_G(GetRealRouteLength_CircularRoute, TransportCatalogue_Tests) {
     catalogue.AddNeighborStopDistance("B"sv, "C"sv, 250);
     catalogue.AddNeighborStopDistance("C"sv, "A"sv, 350);
 
-    catalogue.AddRoute("CircularBus", {"A", "B", "C", "A"});
+    catalogue.AddBus("CircularBus", {"A", "B", "C", "A"});
 
     TEST_EQ(catalogue.GetRealRouteLength("CircularBus"), 750);
 }
@@ -307,7 +307,7 @@ DEFINE_TEST_G(GetRealRouteLength_SingleStop, TransportCatalogue_Tests) {
 
     catalogue.AddStop("A", {55.0, 37.0});
 
-    catalogue.AddRoute("SingleStopBus", {"A"});
+    catalogue.AddBus("SingleStopBus", {"A"});
 
     TEST_EQ(catalogue.GetRealRouteLength("SingleStopBus"), 0);
 }

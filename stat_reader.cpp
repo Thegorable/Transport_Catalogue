@@ -22,7 +22,7 @@ void ParseAndPrintStat(const TransportCatalogue &transport_catalogue, string_vie
         RouteStatistics statistics = transport_catalogue.GetRouteStatistics(data);
         output << statistics.stops_count_ << " stops on route, "s;
         output << statistics.unique_stops_count_ << " unique stops, "s;
-        output << statistics.route_length << " route length, "s;
+        output << statistics.route_length_ << " route length, "s;
         output << statistics.curvature_ << " curvature"s;
         return;
     }

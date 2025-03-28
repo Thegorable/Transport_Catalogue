@@ -1,0 +1,46 @@
+{
+    "base_requests": [
+        {
+            "type": "Stop",
+            "name": "Molkov",
+            "latitude": 43.587795,
+            "longitude": 39.716901,
+            "road_distances": {"Ronda": 1400, "Lokvo" : 2000}
+        },
+        {
+            "type": "Stop",
+            "name": "Ronda",
+            "latitude": 43.581969,
+            "longitude": 39.719848,
+            "road_distances": {"Molkov": 850, "Lokvo" : 300}
+        },
+        {
+            "type": "Stop",
+            "name": "Lokvo",
+            "latitude": 43.581969,
+            "longitude": 39.719848,
+            "road_distances": {"Ronda": 5000}
+        },
+        {
+            "type": "Bus",
+            "name": "114",
+            "stops": ["Molkov", "Ronda", "Lokvo"],
+            "is_roundtrip": true
+        },
+        {
+            "type": "Bus",
+            "name": "220",
+            "stops": ["Ronda", "Molkov"],
+            "is_roundtrip": false
+        }
+    ],
+    "stat_requests": [
+      { "id": 6, "type": "Stop", "name": "Molkov" },
+      { "id": 13, "type": "Stop", "name": "Alexeyevo" },
+      { "id": 215, "type": "Stop", "name": "Ronda" },
+      { "id": 2000, "type": "Stop", "name": "Lokvo" },
+      { "id": 1, "type": "Bus", "name": "400" },
+      { "id": 340, "type": "Bus", "name": "114" },
+      { "id": 2, "type": "Bus", "name": "220" }
+    ]
+  }

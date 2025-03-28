@@ -164,7 +164,7 @@ void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) 
     }
 
     for (auto& bus : buses) {
-        catalogue.AddRoute(string(bus.first), bus.second);
+        catalogue.AddBus(string(bus.first), bus.second);
     }
 }
 

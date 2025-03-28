@@ -97,6 +97,7 @@
         "thread": "cpp",
         "typeindex": "cpp",
         "valarray": "cpp",
-        "input_reader_tests_cpp": "cpp"
+        "input_reader_tests_cpp": "cpp",
+        "filesystem": "cpp"
     }
 }

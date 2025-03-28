@@ -1,20 +1,31 @@
 #include "tests/main_tests.h"
 
 #ifndef DEBUG
+#include <fstream>
 #include <iostream>
-#include <string>
 
-#include "input_reader.h"
-#include "stat_reader.h"
+#include "request_handler.h"
+#include "json.h"
+#include "json_reader.h"
 
 using namespace std;
 
-int main() {
+void ReadAndWriteRequest(istream& in, ostream& out) {
     TransportCatalogue catalogue;
+    json::Document parsed_doc = json::Load(in);
 
-    ReadInputAndApply(cin, catalogue);
-    ParseFullRequest(catalogue, cin, cout);
+    vector<shared_ptr<Request>> requests_base = ReadBaseJsonRequests(parsed_doc);
+    vector<shared_ptr<Stat>> requests_stat = ReadStatJsonRequests(parsed_doc);
+    
+    ProvideInputRequests(requests_base, catalogue);
+    auto stats = GetStats(requests_stat, catalogue);
+    json::Document out_doc = BuildStatJsonOutput(stats);
 
+    json::PrintNode(out_doc, out);
+}
+
+int main() {
+    ReadAndWriteRequest(cin, cout);
     return 0;
 }
 

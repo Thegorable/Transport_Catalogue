@@ -1,4 +1,4 @@
-#define DEBUG
+// #define DEBUG
 
 #ifdef DEBUG
 
@@ -20,6 +20,10 @@ const fs::path OUT_FILE_1 = "tsC_case0_output.txt";
 const fs::path OUT_FILE_2 = "tsC_case1_output.txt";
 const fs::path OUT_FILE_3 = "tsC_case2_output.txt";
 const fs::path OUT_FILE_4 = "tsC_case3_output1.txt";
+const fs::path IN_FILE_JSON_1 = "json_testCase_1_input.json";
+const fs::path OUT_FILE_JSON_1 = "json_testCase_1_output.json";
+const fs::path IN_FILE_JSON_2 = "json_testCase_2_input.json";
+const fs::path OUT_FILE_JSON_2 = "json_testCase_2_output.json";
 
 class ExceptionFixture : public TestFixture
 {

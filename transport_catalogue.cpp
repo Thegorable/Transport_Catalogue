@@ -4,19 +4,21 @@
 
 using namespace std;
 
-const Stop& TransportCatalogue::AddStop(const string &stop, Geo::Coordinates coordinates) {
+const Stop& TransportCatalogue::AddStop(const string_view &stop, Geo::Coordinates coordinates) {
+    string stop_str(stop);
     if (stops_ptrs_.contains(stop)) {
-        throw invalid_argument("Attempt to add existing stop: "s + stop + '\n');
+        throw invalid_argument("Attempt to add existing stop: "s + stop_str + '\n');
     }
-    Stop& new_stop_ref = stops_.emplace_front(stop, coordinates);
+    Stop& new_stop_ref = stops_.emplace_front(move(stop_str), coordinates);
     stops_ptrs_[new_stop_ref.name_] = &new_stop_ref;
 
     return new_stop_ref;
 }
 
-void TransportCatalogue::AddRoute(const string &bus, const vector<std::string_view> &route) {
-    if (buses_ptrs_.contains(bus)) {
-        throw invalid_argument("Attempt to add existing bus: "s + bus + '\n');
+void TransportCatalogue::AddBus(const string_view &bus, const vector<std::string_view>& route) {
+    string bus_str(bus);
+    if (buses_ptrs_.contains(bus_str)) {
+        throw invalid_argument("Attempt to add existing bus: "s + bus_str + '\n');
     }
 
     vector<Stop*> new_route;
@@ -26,7 +28,7 @@ void TransportCatalogue::AddRoute(const string &bus, const vector<std::string_vi
         new_route.emplace_back(stop_ptr);
     }
 
-    Bus& new_bus = buses_.emplace_front(bus, move(new_route));
+    Bus& new_bus = buses_.emplace_front(move(bus_str), move(new_route));
     for (auto& stop : new_bus.route_) {
         stops_routes_ptrs_[stop->name_].insert(&new_bus);
     }
@@ -46,15 +48,20 @@ void TransportCatalogue::AddNeighborStopDistance(std::string_view stop_target_st
         }
 }
 
-RouteStatistics TransportCatalogue::GetRouteStatistics(string_view bus) const {
-    const vector<Stop*>& route = buses_ptrs_.at(bus)->route_;
+optional<RouteStatistics> TransportCatalogue::GetRouteStatistics(string_view bus) const {
+    auto it = buses_ptrs_.find(bus);
+    if (it == buses_ptrs_.end()) {
+        return {};
+    }
+
+    const vector<Stop*>& route = it->second->route_;
     unordered_set<Stop*> unique_stops_(route.begin(), route.end());
     uint32_t real_distance = GetRealRouteLength(bus);
 
-    return {route.size(), 
-        unique_stops_.size(), 
-        real_distance,
-        (double) real_distance / GetRouteLength(bus) };
+    return optional(RouteStatistics{static_cast<int>(real_distance),
+                                    static_cast<int>(route.size()), 
+                                    static_cast<int>(unique_stops_.size()),
+                                    static_cast<double> (real_distance / GetRouteLength(bus)) });
 }
 
 const Bus* TransportCatalogue::FindBus(string_view bus) const {
