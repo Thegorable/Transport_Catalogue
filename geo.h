@@ -42,7 +42,7 @@ namespace Geo {
     inline double ComputeDistance(Coordinates from, Coordinates to) {
         using namespace std;
         if (from == to) {
-            return 0;
+            return 0.0;
         }
         static const double dr = PI / 180.;
         return acos(sin(from.lat * dr) * sin(to.lat * dr)

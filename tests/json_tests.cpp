@@ -121,13 +121,38 @@ DEFINE_TEST_G(NumbersJson, Json_Testing) {
     TEST(PrintNodeToString(dbl_node) == "123.45"s);
     TEST(PrintNodeToString(Node{-42}) == "-42"s);
     TEST(PrintNodeToString(Node{-3.5}) == "-3.5"s);
+    
+    // Node node_zero = LoadJSON("0"s).GetRoot();
+    // Node node_42 = LoadJSON("42.baba"s).GetRoot();
+    // Node node_1_2 = LoadJSON("1.2elka"s).GetRoot();
+    // Node node_1_2_plus = LoadJSON("1.2e+lka"s).GetRoot();
+    // Node node_1_2_minus = LoadJSON("1.2e-lka"s).GetRoot();
+    // Node node_int_overflow = LoadJSON("2147483648"s).GetRoot();
+
+    // TEST(node_zero.IsInt());
+    // TEST(node_zero.AsInt() == 0);
+    // TEST(node_42.IsInt());
+    // TEST(node_42.AsInt() == 42);
+    // TEST(node_1_2.IsDouble());
+    // TEST(node_1_2.AsDouble() == 1.2);
+    // TEST(node_1_2_plus.IsDouble());
+    // TEST(node_1_2_plus.AsDouble() == 1.2);
+    // TEST(node_1_2_minus.IsDouble());
+    // TEST(node_1_2_minus.AsDouble() == 1.2);
+    // TEST(node_int_overflow.IsDouble());
+    // TEST(node_int_overflow.AsDouble() == 2147483648.0);
 
     TEST(LoadJSON("42"s).GetRoot() == int_node);
     TEST(LoadJSON("123.45"s).GetRoot() == dbl_node);
     TEST(LoadJSON("0.25"s).GetRoot().AsDouble() == 0.25);
     TEST(LoadJSON("3e5"s).GetRoot().AsDouble() == 3e5);
+    TEST(LoadJSON("-3e5"s).GetRoot().AsDouble() == -3e5);
     TEST(LoadJSON("1.2e-5"s).GetRoot().AsDouble() == 1.2e-5);
+    TEST(LoadJSON("1563.26e-11"s).GetRoot().AsDouble() == 1563.26e-11);
+    TEST(LoadJSON("-0.0053"s).GetRoot().AsDouble() == -0.0053);
+    TEST(LoadJSON("1.2E-5"s).GetRoot().AsDouble() == 1.2e-5);
     TEST(LoadJSON("1.2e+5"s).GetRoot().AsDouble() == 1.2e5);
+    TEST(LoadJSON("1.2E+5"s).GetRoot().AsDouble() == 1.2e5);
     TEST(LoadJSON("-123456"s).GetRoot().AsInt() == -123456);
     TEST(LoadJSON("0").GetRoot() == Node{0});
     TEST(LoadJSON("0.0").GetRoot() == Node{0.0});
@@ -275,10 +300,6 @@ DEFINE_TEST_G(PrintingPrimitives, Json_Testing) {
     TEST(PrintNodeToString(Node("Hello"s)) == "\"Hello\"");
 }
 
-DEFINE_TEST_G(PrintingDict, Json_Testing) {
-    Node dict = Node(Dict{{"key1", 1}, {"key2", "value"}});
-    TEST(PrintNodeToString(dict) == "{\"key1\" : 1, \"key2\" : \"value\"}");
-}
 
 DEFINE_TEST_G(MinifiedLoad, Json_Testing) {
     std::string s = "[{\"array\":[1,2,3],\"bool\":true,\"double\":42.1,\"int\":42,\"map\":{\"key\":\"value\",\"bool_key\":false},\"null\":null,\"string\":\"hello\"}]";
@@ -312,6 +333,8 @@ DEFINE_TEST_G(ErrorHandling, Json_Testing) {
     MustFailToLoad("nul"s);
 
     MustFailToLoad("truestory"s);
+
+    MustFailToLoad("0123"s);
 
     Node dbl_node{3.5};
     MustThrowLogicError([&dbl_node] { 

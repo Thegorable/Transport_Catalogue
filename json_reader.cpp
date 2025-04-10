@@ -92,8 +92,10 @@ json::Document BuildStatJsonOutput(const std::vector<std::shared_ptr<Stat>> &ans
             }
 
             json::Array buses;
-            for (auto& bus : *ptr_stat->buses_) {
-                buses.emplace_back(bus->name_);
+            if (ptr_stat->buses_ != nullptr) {
+                for (auto& bus : *ptr_stat->buses_) {
+                    buses.emplace_back(bus->name_);
+                }
             }
             stat["buses"s] = move(buses);
             arr.push_back(move(stat));

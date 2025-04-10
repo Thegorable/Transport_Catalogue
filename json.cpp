@@ -104,66 +104,129 @@ namespace {
     
         return Node(move(result));
     }
-    
-    // Node LoadDigit(istream& input) {
-    //     int result_i;
-    //     auto start_pos = input.tellg();      
-    //     input >> result_i;
-    
-    //     char cur_char = input.peek();
-    //     if (cur_char != '.' && cur_char != 'e' && cur_char != 'E') {
-    //         return Node(result_i);
-    //     }
-    
-    //     double result_d;
-    //     input.seekg(start_pos, ios_base::beg);
-    //     input >> result_d;
-    
-    //     return Node(result_d);
-    // }
 
     Node LoadDigit(istream& input) {
-        int result_i;
-        auto start_pos = input.tellg();      
-        input >> result_i;
-    
-        char cur_char = input.peek();
-        if (cur_char != '.' && cur_char != 'e' && cur_char != 'E') {
-            return Node(result_i);
-        }
-
         string number_str;
-        number_str += input.get();
-        cur_char = input.peek();
+        bool is_int = true;
 
-        while (isdigit(cur_char)) {
-            number_str += cur_char;
-            input.get();
-            cur_char = input.peek();
+        if(input.peek() == '-') {
+            number_str += static_cast<char>(input.get());
         }
-        
-        if (cur_char == 'e' || cur_char == 'E') {
-            number_str += cur_char;
-            input.get();
-            cur_char = input.peek();
 
-            if(cur_char == '-' || cur_char == '+') {
-                number_str += cur_char;
-                input.get();
-                cur_char = input.peek();
-            }
-            
-            while (isdigit(cur_char)) {
-                number_str += cur_char;
-                input.get();
-                cur_char = input.peek();
+        if(input.peek() == '0') {
+            number_str += static_cast<char>(input.get());
+        }
+        else {
+            while (isdigit(input.peek())) {
+                number_str += static_cast<char>(input.get());
             }
         }
 
-        number_str = to_string(result_i) + number_str;
+
+        if (input.peek() == '.') {
+            number_str += static_cast<char>(input.get());
+            is_int = false;
+            if (!isdigit(input.peek())) {
+                ParsingError("After . should a digit or exponential part");
+            }
+
+            while (isdigit(input.peek())){
+                number_str += static_cast<char>(input.get());
+            } 
+        }
+
+        char ch = input.peek();
+        if (ch == 'e' || ch == 'E') {
+            number_str += static_cast<char>(input.get());
+            is_int = false;
+            ch = input.peek();
+            if(ch == '-' || ch == '+') {
+                number_str += static_cast<char>(input.get());
+            }
+
+            if (!isdigit(input.peek())) {
+                ParsingError("After e+ or e- should a digit");
+            }
+        }
+
+        if (is_int) {
+            try {
+                return std::stoi(number_str);
+            } catch (...) {std::stod(number_str);}
+        }
+
+        while (isdigit(input.peek())) {
+            number_str += static_cast<char>(input.get());
+        }
     
         return Node(stod(number_str));
     }
+
+    // Node LoadDigit(std::istream& input) {
+    //     std::string parsed_num;
+    
+    //     // Считывает в parsed_num очередной символ из input
+    //     auto read_char = [&parsed_num, &input] {
+    //         parsed_num += static_cast<char>(input.get());
+    //         if (!input) {
+    //             throw ParsingError("Failed to read number from stream"s);
+    //         }
+    //     };
+    
+    //     // Считывает одну или более цифр в parsed_num из input
+    //     auto read_digits = [&input, read_char] {
+    //         if (!std::isdigit(input.peek())) {
+    //             throw ParsingError("A digit is expected"s);
+    //         }
+    //         while (std::isdigit(input.peek())) {
+    //             read_char();
+    //         }
+    //     };
+    
+    //     if (input.peek() == '-') {
+    //         read_char();
+    //     }
+    //     // Парсим целую часть числа
+    //     if (input.peek() == '0') {
+    //         read_char();
+    //         // После 0 в JSON не могут идти другие цифры
+    //     } else {
+    //         read_digits();
+    //     }
+    
+    //     bool is_int = true;
+    //     // Парсим дробную часть числа
+    //     if (input.peek() == '.') {
+    //         read_char();
+    //         read_digits();
+    //         is_int = false;
+    //     }
+    
+    //     // Парсим экспоненциальную часть числа
+    //     if (int ch = input.peek(); ch == 'e' || ch == 'E') {
+    //         read_char();
+    //         if (ch = input.peek(); ch == '+' || ch == '-') {
+    //             read_char();
+    //         }
+    //         read_digits();
+    //         is_int = false;
+    //     }
+    
+    //     try {
+    //         if (is_int) {
+    //             // Сначала пробуем преобразовать строку в int
+    //             try {
+    //                 return std::stoi(parsed_num);
+    //             } catch (...) {
+    //                 // В случае неудачи, например, при переполнении
+    //                 // код ниже попробует преобразовать строку в double
+    //             }
+    //         }
+    //         return std::stod(parsed_num);
+    //     } catch (...) {
+    //         throw ParsingError("Failed to convert "s + parsed_num + " to number"s);
+    //     }
+    // }
     
     Node LoadBool(istream& input) {
         std::boolalpha(input);
@@ -225,27 +288,40 @@ namespace {
         return Node(line);
     }
 
-    void PrintNode(const Node& node, ostream& out) {
-        visit(NodePrinter(out), node.GetValue());
+    void PrintNode(const Node& node, ostream& out, int nested = 0) {
+        visit(NodePrinter(out, nested), node.GetValue());
     }
     
 }  // namespace
 
-NodePrinter::NodePrinter(ostream& o) : out(o) {}
+NodePrinter::NodePrinter(ostream& o, int nested) : out(o), nested_(nested) {}
 
 void NodePrinter::operator () (nullptr_t) {
+    for (int i = 0; i < nested_; i++) {
+        out << "    ";
+    }
+    
     out << "null"s;
 }
 
 void NodePrinter::operator () (int value) {
+    for (int i = 0; i < nested_; i++) {
+        out << "    ";
+    }
     out << value;
 }
 
 void NodePrinter::operator () (double value) {
+    for (int i = 0; i < nested_; i++) {
+        out << "    ";
+    }
     out << value;
 }
 
 void NodePrinter::operator () (const string& value) {
+    for (int i = 0; i < nested_; i++) {
+        out << "    ";
+    }
     out << '\"';
     for (char cur_char : value) {
         switch (cur_char)
@@ -273,11 +349,17 @@ void NodePrinter::operator () (const string& value) {
 }
 
 void NodePrinter::operator () (bool value) {
+    for (int i = 0; i < nested_; i++) {
+        out << "    ";
+    }
     out << boolalpha << value;
     noboolalpha(out);
 }
 
 void NodePrinter::operator () (const Array& value) {
+    for (int i = 0; i < nested_; i++) {
+        out << "    ";
+    }
     out << "[\n";
 
     bool first = true;
@@ -285,27 +367,41 @@ void NodePrinter::operator () (const Array& value) {
         if (!first) {
             out << ",\n";
         }
-        out << "    ";
-        PrintNode(node, out);
+        PrintNode(node, out, nested_ + 1);
         first = false;
     }
-    out << "\n]";
+
+    out << '\n';
+    for (int i = 0; i < nested_; i++) {
+        out << "    ";
+    }
+    out << "]";
 }
 
 void NodePrinter::operator () (const Dict& value) {
-    out << "{";
+    for (int i = 0; i < nested_; i++) {
+        out << "    ";
+    }
+    out << "{\n";
     
     bool first = true;
     for (auto& [key, node_in] : value) {
         if (!first) {
-            out << ", ";
+            out << ", \n";
+        }
+        for (int i = 0; i < nested_ + 1; i++) {
+            out << "    ";
         }
         out << '"' << key << "\" : ";
-        PrintNode(node_in, out);
+        PrintNode(node_in, out, nested_ + 1);
         first = false;
     }
 
-    out << "}";
+    out << '\n';
+    for (int i = 0; i < nested_; i++) {
+        out << "    ";
+    }
+    out << '}';
 }
 
 Node::Node(Array array)

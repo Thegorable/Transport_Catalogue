@@ -25,6 +25,10 @@ void ReadAndWriteRequest(istream& in, ostream& out) {
 }
 
 int main() {
+    // ifstream in("H:\\Programming\\Training_projects\\Transport_Catalogue_tests_data\\json_testCase_2_input.json");
+    // ofstream file("H:\\Programming\\Training_projects\\Transport_Catalogue\\json_testCase_2_OutResult.json");
+    // ReadAndWriteRequest(in, file);
+    // file.close();
     ReadAndWriteRequest(cin, cout);
     return 0;
 }

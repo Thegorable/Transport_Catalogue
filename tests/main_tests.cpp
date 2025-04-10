@@ -27,7 +27,7 @@ vector<string> ReadCurrentLayerStream(ifstream& stream) {
     return lines;
 }
 
-string ExecuteRequest(fs::path in, bool print_result = false) {
+string ExecuteRequest(fs::path in, bool print_result = false, ostream& out_source = cout) {
     ifstream input(in);
     json::Document parsed_doc = json::Load(input);
 
@@ -43,20 +43,20 @@ string ExecuteRequest(fs::path in, bool print_result = false) {
     json::PrintNode(out_doc, output);
 
     if (print_result) {
-        cout << output.str() << "\n\n";
+        out_source << output.str() << "\n\n";
     }
 
     return output.str();
 }
 
-string RePrintJson(fs::path in, bool print_result = false) {
+string RePrintJson(fs::path in, bool print_result = false, ostream& out_source = cout) {
     ifstream input(in);
     json::Document parsed_doc = json::Load(input);
     stringstream output;
     json::PrintNode(parsed_doc, output);
 
     if (print_result) {
-        cout << output.str() << "\n\n";
+        out_source << output.str() << "\n\n";
     }
 
     return output.str();
@@ -72,6 +72,29 @@ DEFINE_TEST_G(Json_Main, MainTests) {
     {
         string str_rec = ExecuteRequest(TESTS_PATH / IN_FILE_JSON_2);
         string test_file = RePrintJson(TESTS_PATH / OUT_FILE_JSON_2);
+        TEST(str_rec == test_file);
+    }
+
+    {
+        string str_rec = ExecuteRequest(TESTS_PATH / IN_FILE_JSON_3);
+        string test_file = RePrintJson(TESTS_PATH / OUT_FILE_JSON_3);
+        TEST(str_rec == test_file);
+    }
+
+    {
+        string str_rec = ExecuteRequest(TESTS_PATH / IN_FILE_JSON_4);
+        string test_file = RePrintJson(TESTS_PATH / OUT_FILE_JSON_4);
+        TEST(str_rec == test_file);
+    }
+    
+    {
+        string str_rec = ExecuteRequest(TESTS_PATH / IN_FILE_JSON_5);
+        string test_file = RePrintJson(TESTS_PATH / OUT_FILE_JSON_5);
+        TEST(str_rec == test_file);
+    }
+    {
+        string str_rec = ExecuteRequest(TESTS_PATH / IN_FILE_JSON_6);
+        string test_file = RePrintJson(TESTS_PATH / OUT_FILE_JSON_6);
         TEST(str_rec == test_file);
     }
 }

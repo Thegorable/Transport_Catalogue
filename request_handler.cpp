@@ -55,7 +55,7 @@ void ProvideInputRequests(const std::vector<std::shared_ptr<Request>> &input_req
 
     for (auto& bus_request : buses_requests) {
         auto& route = bus_request->route_;
-        if (bus_request->is_round_trip_ && route.size() > 1) {
+        if (!bus_request->is_round_trip_ && route.size() > 1) {
             int64_t start_point = static_cast<int64_t>(route.size()) - 2;
             for (int64_t i = start_point; i >= 0; i--) {
                 route.push_back(route[i]);
@@ -63,7 +63,6 @@ void ProvideInputRequests(const std::vector<std::shared_ptr<Request>> &input_req
             transport_c.AddBus(bus_request->name_, route);
             continue;
         }
-        route.push_back(route[0]);
         transport_c.AddBus(bus_request->name_, route);
     }
 }
@@ -86,11 +85,12 @@ std::vector<std::shared_ptr<Stat>> GetStats(const vector<shared_ptr<Stat>> &out_
         
         case RequestType::Stop: {
             StatStop stat_stop(RequestType::Stop, request->id_);
-            stat_stop.buses_ = transport_c.FindBuses(request->name_);
-            if (stat_stop.buses_ == nullptr) {
+            auto stop = transport_c.FindStop(request->name_);
+            if (stop == nullptr) {
                 stats.push_back(make_shared<Stat>(RequestType::Error, request->id_));
                 break;
             }
+            stat_stop.buses_ = transport_c.FindBuses(request->name_);
             stats.push_back(make_shared<StatStop>(move(stat_stop)));
             break;
         }

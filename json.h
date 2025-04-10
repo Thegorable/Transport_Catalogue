@@ -17,7 +17,7 @@ public:
 };
 
 struct NodePrinter {
-    NodePrinter(std::ostream& o);
+    NodePrinter(std::ostream& o, int nested = 0);
 
     void operator () (std::nullptr_t);
     void operator () (int value);
@@ -29,6 +29,7 @@ struct NodePrinter {
 
 private:
     std::ostream& out;
+    int nested_ = 0;
 };
 
 using JsonValue = std::variant<std::nullptr_t, int, double, std::string, bool, Array, Dict>;
