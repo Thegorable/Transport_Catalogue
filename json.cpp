@@ -443,6 +443,13 @@ const Array& Node::AsArray() const {
     return std::get<Array>(value_);
 }
 
+const Array& Node::AsArray(const string& m) const {
+    if (!std::holds_alternative<Array>(value_)) {
+        throw std::logic_error("Doesn't contain Array with name"s + m);
+    }
+    return std::get<Array>(value_);
+}
+
 const Dict& Node::AsMap() const {
     if (!std::holds_alternative<Dict>(value_)) {
         throw std::logic_error("Doesn't contain Dict"s);
@@ -470,6 +477,16 @@ double Node::AsDouble() const {
     }
     if (!std::holds_alternative<int>(value_)) {
         throw std::logic_error("Doesn't contain double"s);
+    }
+    return static_cast<double> (std::get<int>(value_));
+}
+
+double Node::AsDouble(const string& m) const {
+    if (std::holds_alternative<double>(value_)) {
+        return std::get<double>(value_);
+    }
+    if (!std::holds_alternative<int>(value_)) {
+        throw std::logic_error("Doesn't contain double with name"s + m);
     }
     return static_cast<double> (std::get<int>(value_));
 }

@@ -4,6 +4,8 @@
 
 enum class RequestType {Bus, Stop, Error};
 
+class RequestHander;
+
 struct NeighborStop {
 	std::string_view name_;
 	int distance_;
@@ -12,15 +14,15 @@ struct NeighborStop {
 struct Request {
     Request() = default;
     Request(RequestType type = RequestType::Bus);
+    virtual void MoveToHandler(RequestHander& handler) = 0;
 
     RequestType type_;
     std::string_view name_;
-
-	virtual ~Request() = default;
 };
 
 struct RequestBaseStop : public Request {
     RequestBaseStop(RequestType type = RequestType::Bus, Geo::Coordinates coords = {0.0, 0.0});
+    void MoveToHandler(RequestHander& handler) override;
 
     Geo::Coordinates coords_;
 	std::vector<NeighborStop> neighbor_stops_;
@@ -28,6 +30,7 @@ struct RequestBaseStop : public Request {
 
 struct RequestBaseBus : public Request {
     RequestBaseBus(RequestType type = RequestType::Bus, bool is_round_trip = false);
+    void MoveToHandler(RequestHander& handler) override;
 
     std::vector<std::string_view> route_;
     bool is_round_trip_;
@@ -35,54 +38,39 @@ struct RequestBaseBus : public Request {
 
 struct Stat : public Request {
     Stat(RequestType type = RequestType::Bus, int id = 0);
+    void MoveToHandler(RequestHander& handler) override;
     int id_ = 0;
 };
 
 struct StatStop : public Stat {
     StatStop(RequestType type = RequestType::Bus, int id = 0);
+    void MoveToHandler(RequestHander& handler) override;
 
     const BusPtrsSet* buses_;
 };
 
 struct StatBus : public RouteStatistics, public Stat {
     StatBus(const RouteStatistics& parent, RequestType type = RequestType::Bus, int id = 0);
+    void MoveToHandler(RequestHander& handler) override;
 };
 
-void ProvideInputRequests(const std::vector<std::shared_ptr<Request>>& input_requests, TransportCatalogue& transport_c);
-std::vector<std::shared_ptr<Stat>> GetStats(const std::vector<std::shared_ptr<Stat>>& out_requests, const TransportCatalogue& transport_c);
-
-/*
- * Здесь можно было бы разместить код обработчика запросов к базе, содержащего логику, которую не
- * хотелось бы помещать ни в transport_catalogue, ни в json reader.
- *
- * В качестве источника для идей предлагаем взглянуть на нашу версию обработчика запросов.
- * Вы можете реализовать обработку запросов способом, который удобнее вам.
- *
- * Если вы затрудняетесь выбрать, что можно было бы поместить в этот файл,
- * можете оставить его пустым.
- */
-
-// Класс RequestHandler играет роль Фасада, упрощающего взаимодействие JSON reader-а
-// с другими подсистемами приложения.
-// См. паттерн проектирования Фасад: https://ru.wikipedia.org/wiki/Фасад_(шаблон_проектирования)
-/*
-class RequestHandler {
+class RequestHander {
 public:
-    // MapRenderer понадобится в следующей части итогового проекта
-    RequestHandler(const TransportCatalogue& db, const renderer::MapRenderer& renderer);
-
-    // Возвращает информацию о маршруте (запрос Bus)
-    std::optional<BusStat> GetBusStat(const std::string_view& bus_name) const;
-
-    // Возвращает маршруты, проходящие через
-    const std::unordered_set<BusPtr>* GetBusesByStop(const std::string_view& stop_name) const;
-
-    // Этот метод будет нужен в следующей части итогового проекта
-    svg::Document RenderMap() const;
-
+    RequestHander();
+    void AddRequest(Request& base_request);
+    void AddRequest(RequestBaseBus&& request_base_bus);
+    void AddRequest(RequestBaseStop&&  request_base_stop);
+    void AddRequest(Stat&& request_stat);
+    void ProvideInputRequests(TransportCatalogue& transport_c);
+    std::vector<std::shared_ptr<Stat>> GetStats(const TransportCatalogue& transport_c) const;
 private:
-    // RequestHandler использует агрегацию объектов "Транспортный Справочник" и "Визуализатор Карты"
-    const TransportCatalogue& db_;
-    const renderer::MapRenderer& renderer_;
+    void PushBusStat(const TransportCatalogue& transport_c, 
+        const Stat& stat, 
+        std::vector<std::shared_ptr<Stat>>& container) const;
+    void PushStopStat(const TransportCatalogue& transport_c, 
+        const Stat& stat, 
+        std::vector<std::shared_ptr<Stat>>& container) const;
+    std::vector<RequestBaseStop> base_stop_requests_;
+    std::vector<RequestBaseBus> base_bus_requests_;
+    std::vector<Stat> stat_requests_;
 };
-*/

@@ -1,14 +1,67 @@
 #include "domain.h"
 
-/*
- * В этом файле вы можете разместить классы/структуры, которые являются частью предметной области
- * (domain) вашего приложения и не зависят от транспортного справочника. Например Автобусные
- * маршруты и Остановки.
- *
- * Их можно было бы разместить и в transport_catalogue.h, однако вынесение их в отдельный
- * заголовочный файл может оказаться полезным, когда дело дойдёт до визуализации карты маршрутов:
- * визуализатор карты (map_renderer) можно будет сделать независящим от транспортного справочника.
- *
- * Если структура вашего приложения не позволяет так сделать, просто оставьте этот файл пустым.
- *
- */
+Stop::Stop() = default;
+
+Stop::Stop(const std::string& name)
+    : name_(name) {}
+
+Stop::Stop(std::string&& name)
+    : name_(std::move(name)) {}
+
+Stop::Stop(const std::string& name, Geo::Coordinates coords)
+    : name_(name), coords_(coords) {}
+
+Stop::Stop(std::string&& name, Geo::Coordinates coords)
+    : name_(std::move(name)), coords_(coords) {}
+
+void Stop::AddNeighborStop(Stop* stop_ptr, uint32_t distance) {
+    neighbor_stops_dist_[stop_ptr] = distance;
+}
+
+bool Stop::operator==(const Stop& other) const {
+    return name_ == other.name_;
+}
+
+bool Stop::operator<(const Stop& other) const {
+    return name_ < other.name_;
+}
+
+bool Stop::operator<=(const Stop& other) const {
+    return name_ <= other.name_;
+}
+
+bool Stop::operator>(const Stop& other) const {
+    return name_ > other.name_;
+}
+
+bool Stop::operator>=(const Stop& other) const {
+    return name_ >= other.name_;
+}
+
+Bus::Bus() = default;
+
+Bus::Bus(const std::string& name, const std::vector<Stop*>& route, bool is_round)
+    : name_(name), route_(route), is_round_(is_round) {}
+
+Bus::Bus(std::string&& name, std::vector<Stop*>&& route, bool is_round)
+    : name_(std::move(name)), route_(std::move(route)), is_round_(is_round) {}
+
+bool Bus::operator==(const Bus& other) const {
+    return name_ == other.name_;
+}
+
+bool Bus::operator<(const Bus& other) const {
+    return name_ < other.name_;
+}
+
+bool Bus::operator<=(const Bus& other) const {
+    return name_ <= other.name_;
+}
+
+bool Bus::operator>(const Bus& other) const {
+    return name_ > other.name_;
+}
+
+bool Bus::operator>=(const Bus& other) const {
+    return name_ >= other.name_;
+}

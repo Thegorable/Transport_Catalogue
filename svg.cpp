@@ -75,7 +75,7 @@ ostream& operator <<(ostream& o, StrokeLineJoin in) {
     return o;
 }
 
-void Object::Render(const RenderContext& context) const {
+void Object::Render(const RenderProperties& context) const {
     context.RenderIndent();
     RenderObject(context);
     context.out << std::endl;
@@ -91,7 +91,7 @@ Circle& Circle::SetRadius(double radius)  {
     return *this;
 }
 
-void Circle::RenderObject(const RenderContext& context) const {
+void Circle::RenderObject(const RenderProperties& context) const {
     auto& out = context.out;
     out << "<circle";
     WriteAttribute<double>(out, {"cx", center_.x});
@@ -106,7 +106,7 @@ Polyline& Polyline::AddPoint(Point p) {
     return *this;
 }
 
-void Polyline::RenderObject(const RenderContext& ctx) const {
+void Polyline::RenderObject(const RenderProperties& ctx) const {
     auto& out = ctx.out;
     out << "<polyline";
     stringstream points_value;
@@ -155,13 +155,10 @@ Text& Text::SetData(const string& data) {
     return *this;
 }
 
-void Text::RenderObject(const RenderContext& ctx) const {
+void Text::RenderObject(const RenderProperties& ctx) const {
     auto& out = ctx.out;
     out << "<text";
     WriteBasicAttrs(out);
-    WriteAttribute<double>(out, {"stroke-width", stroke_width_}, stroke_width_ != 0.0);
-    WriteAttribute<StrokeLineCap>(out, {"stroke-linecap", line_cap_}, line_cap_ != StrokeLineCap::NONE);
-    WriteAttribute<StrokeLineJoin>(out, {"stroke-linejoin", line_join_}, line_join_ != StrokeLineJoin::NONE);
     WriteAttribute<double>(out, {"x"s, position_.x});
     WriteAttribute<double>(out, {"y"s, position_.y});
     WriteAttribute<double>(out, {"dx"s, offset_.x});
@@ -172,7 +169,7 @@ void Text::RenderObject(const RenderContext& ctx) const {
     out << '>' << data_ << "</text>";
 }
 
-void Document::AddPtr(std::unique_ptr<Object>&& obj_ptr) {
+void Document::AddObjectPtr(std::unique_ptr<Object>&& obj_ptr) {
     objects_ptrs_.push_back(move(obj_ptr));
 }
 
@@ -180,7 +177,7 @@ void Document::Render(ostream& out) const {
     out << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"sv << std::endl;
     out << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">"sv << std::endl;
     
-    RenderContext ctx(out, 1, 2);
+    RenderProperties ctx(out, 1, 2);
     for(auto& object_ptr : objects_ptrs_) {
         object_ptr->Render(ctx);
     }

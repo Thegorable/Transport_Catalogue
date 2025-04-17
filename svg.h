@@ -6,29 +6,48 @@
 #include <string>
 #include <vector>
 #include <variant>
+#include <limits>
+
+inline bool IsEqualDouble(double l, double r) {
+    return std::abs(l - r) < std::numeric_limits<double>::epsilon();
+}
 
 namespace svg {
 
 struct Rgb {
+    Rgb() = default;
     Rgb(uint8_t r, uint8_t g, uint8_t b) :
     red(r), green(g), blue(b) {}
     Rgb(const Rgb& other) : 
     red(other.red), green(other.green), blue(other.blue) {}
+
+    Rgb& operator =(const Rgb& other) {
+        red = other.red;
+        green = other.green;
+        blue = other.blue;
+        return *this;
+    }
 
     uint8_t red = 0;
     uint8_t green = 0;
     uint8_t blue = 0;
 };
 
-struct Rgba {
+struct Rgba : public Rgb {
+    Rgba() = default;
     Rgba(uint8_t r, uint8_t g, uint8_t b, double o) :
-    red(r), green(g), blue(b), opacity(o) {}
+    Rgb(r, g, b), opacity(o) {}
     Rgba(const Rgba& other) : 
-    red(other.red), green(other.green), blue(other.blue), opacity(other.opacity) {}
+    Rgb(other.red, other.green, other.blue), opacity(other.opacity) {}
 
-    uint8_t red = 0;
-    uint8_t green = 0;
-    uint8_t blue = 0;
+    Rgba& operator =(const Rgba& other) {
+        red = other.red;
+        green = other.green;
+        blue = other.blue;
+        opacity = other.opacity;
+        return *this;
+    }
+
     double opacity = 1.0;
 };
 
@@ -69,18 +88,18 @@ struct Point {
     double y = 0;
 };
 
-struct RenderContext {
-    RenderContext(std::ostream& out)
+struct RenderProperties {
+    RenderProperties(std::ostream& out)
         : out(out) {
     }
 
-    RenderContext(std::ostream& out, int indent_step, int indent = 0)
+    RenderProperties(std::ostream& out, int indent_step, int indent = 0)
         : out(out)
         , indent_step(indent_step)
         , indent(indent) {
     }
 
-    RenderContext Indented() const {
+    RenderProperties Indented() const {
         return {out, indent_step, indent + indent_step};
     }
 
@@ -118,15 +137,15 @@ void WriteAttribute(std::ostream& out, const AttributeValue<ValueType>& attr_val
 
 class Object {
 public:
-    virtual void Render(const RenderContext& context) const;
+    virtual void Render(const RenderProperties& context) const;
     virtual ~Object() = default;
 
 private:
-    virtual void RenderObject(const RenderContext& context) const = 0;
+    virtual void RenderObject(const RenderProperties& context) const = 0;
 };
 
 template<typename Owner>
-class PathProps {
+class ObjectProperties {
 public:
     Owner& SetFillColor(const Color& color) {fill_color_ = color; return AsOwner();}
     Owner& SetStrokeColor(const Color& color) {stroke_color_ = color; return AsOwner();}
@@ -137,6 +156,9 @@ protected:
     void WriteBasicAttrs(std::ostream& out) const {
         WriteAttribute<const Color&>(out, {"fill", fill_color_}, !std::holds_alternative<std::monostate>(fill_color_));
         WriteAttribute<const Color&>(out, {"stroke", stroke_color_}, !std::holds_alternative<std::monostate>(stroke_color_));
+        WriteAttribute<double>(out, {"stroke-width", stroke_width_}, !IsEqualDouble(stroke_width_, 0.0));
+        WriteAttribute<StrokeLineCap> (out, {"stroke-linecap", line_cap_}, line_cap_ != StrokeLineCap::NONE);
+        WriteAttribute<StrokeLineJoin> (out, {"stroke-linejoin", line_join_}, line_join_ != StrokeLineJoin::NONE);
     }
 
     Color fill_color_;
@@ -152,33 +174,33 @@ private:
 };
 
 
-class Circle final : public Object, public PathProps<Circle> {
+class Circle final : public Object, public ObjectProperties<Circle> {
 public:
     Circle() = default;
     Circle& SetCenter(Point center);
     Circle& SetRadius(double radius);
 
 private:
-    void RenderObject(const RenderContext& context) const override;
+    void RenderObject(const RenderProperties& context) const override;
 
     Point center_;
     double radius_ = 1.0;
 };
 
 
-class Polyline final : public Object, public PathProps<Polyline> {
+class Polyline final : public Object, public ObjectProperties<Polyline> {
 public:
     Polyline() = default;
     Polyline& AddPoint(Point point);
 
 private:
-    void RenderObject(const RenderContext& ctx) const override;
+    void RenderObject(const RenderProperties& ctx) const override;
 
     std::vector<Point> points_;
 };
 
 
-class Text final : public Object, public PathProps<Text> {
+class Text final : public Object, public ObjectProperties<Text> {
 public:
     Text() = default;
     Text& SetPosition(Point pos);
@@ -189,7 +211,7 @@ public:
     Text& SetData(const std::string& data);
 
 private:
-    void RenderObject(const RenderContext& ctx) const override;
+    void RenderObject(const RenderProperties& ctx) const override;
 
     Point position_;
     Point offset_;
@@ -202,17 +224,17 @@ private:
 class ObjectContainer {
 public:
     template<typename T>
-    void Add(T object) {
-        AddPtr(std::make_unique<T>(std::move(object)));
+    void AddObject(T object) {
+        AddObjectPtr(std::make_unique<T>(std::move(object)));
     }
-    virtual void AddPtr(std::unique_ptr<Object>&& object_ptr) = 0;
+    virtual void AddObjectPtr(std::unique_ptr<Object>&& object_ptr) = 0;
 
     virtual ~ObjectContainer() = default;
 };
 
 class Document : public ObjectContainer {
 public:
-    void AddPtr(std::unique_ptr<Object>&& obj_ptr) override;
+    void AddObjectPtr(std::unique_ptr<Object>&& obj_ptr) override;
 
     void Render(std::ostream& out) const;
 

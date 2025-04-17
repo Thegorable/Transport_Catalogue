@@ -17,88 +17,112 @@ RequestBaseStop::RequestBaseStop(RequestType type, Geo::Coordinates coords)
 RequestBaseBus::RequestBaseBus(RequestType type, bool is_round_trip)
 : Request(type), is_round_trip_(is_round_trip) {}
 
-void ProvideInputRequests(const std::vector<std::shared_ptr<Request>> &input_requests, TransportCatalogue &transport_c) {    
-    vector<RequestBaseStop*> stops_requests;
-    vector<RequestBaseBus*> buses_requests;
-    
-    for (auto& request : input_requests) {
-        switch (request->type_) {
-        case RequestType::Stop: {
-            RequestBaseStop* stop_request = dynamic_cast<RequestBaseStop*>(request.get());
-            if (stop_request == nullptr) {
-                throw logic_error("Dynamic cast from Rquest to RequestBaseStop is failed");
-            }
-            stops_requests.push_back(stop_request);
-            transport_c.AddStop(stop_request->name_, stop_request->coords_);
-            break;
-        }
 
-        case RequestType::Bus: {
-            RequestBaseBus* bus_request = dynamic_cast<RequestBaseBus*>(request.get());
-            if (bus_request == nullptr) {
-                throw logic_error("Dynamic cast from Rquest to RequestBaseBus is failed");
-            }
-            buses_requests.push_back(bus_request);
-            break; 
-        }
+RequestHander::RequestHander() = default;
 
-        default:
-            break;
-        }
+void RequestHander::AddRequest(Request& base_request) {
+    base_request.MoveToHandler(*this);
+}
+
+void RequestHander::AddRequest(RequestBaseBus &&request_base_bus) {
+    base_bus_requests_.push_back(move(request_base_bus));
+}
+
+void RequestHander::AddRequest(RequestBaseStop &&request_base_stop) {
+    base_stop_requests_.push_back(move(request_base_stop));
+}
+
+void RequestHander::AddRequest(Stat &&request_stat) {
+    stat_requests_.push_back(move(request_stat));
+}
+
+void RequestBaseBus::MoveToHandler(RequestHander &handler) {
+    handler.AddRequest(move(*this));
+}
+
+void RequestBaseStop::MoveToHandler(RequestHander &handler) {
+    handler.AddRequest(move(*this));
+}
+
+void StatBus::MoveToHandler(RequestHander &handler) {
+    handler.AddRequest(move(*this));
+}
+
+void StatStop::MoveToHandler(RequestHander &handler) {
+    handler.AddRequest(move(*this));
+}
+
+void Stat::MoveToHandler(RequestHander &handler) {
+    handler.AddRequest(*this);
+}
+void RequestHander::ProvideInputRequests(TransportCatalogue &transport_c) {
+    for (auto& stop_target : base_stop_requests_) {
+        transport_c.AddStop(stop_target.name_, stop_target.coords_);
     }
 
-
-    for (auto& stop_target : stops_requests) {
-        for (auto& stop_neighbor : stop_target->neighbor_stops_)
-        transport_c.AddNeighborStopDistance(stop_target->name_, stop_neighbor.name_, stop_neighbor.distance_);
+    for (auto& stop_target : base_stop_requests_) {
+        for (auto& stop_neighbor : stop_target.neighbor_stops_)
+        transport_c.AddNeighborStopDistance(stop_target.name_, stop_neighbor.name_, stop_neighbor.distance_);
     }
 
-    for (auto& bus_request : buses_requests) {
-        auto& route = bus_request->route_;
-        if (!bus_request->is_round_trip_ && route.size() > 1) {
+    for (auto& bus_request : base_bus_requests_) {
+        auto& route = bus_request.route_;
+        if (!bus_request.is_round_trip_ && route.size() > 1) {
             int64_t start_point = static_cast<int64_t>(route.size()) - 2;
             for (int64_t i = start_point; i >= 0; i--) {
                 route.push_back(route[i]);
             }
-            transport_c.AddBus(bus_request->name_, route);
+            transport_c.AddBus(bus_request.name_, route, bus_request.is_round_trip_);
             continue;
         }
-        transport_c.AddBus(bus_request->name_, route);
+        transport_c.AddBus(bus_request.name_, route, bus_request.is_round_trip_);
     }
 }
 
-std::vector<std::shared_ptr<Stat>> GetStats(const vector<shared_ptr<Stat>> &out_requests, const TransportCatalogue &transport_c) {
-    std::vector<std::shared_ptr<Stat>> stats;
-    
-    for (auto& request : out_requests) {
-        switch (request->type_) {
-        case RequestType::Bus: {
-            auto statistics_opt = transport_c.GetRouteStatistics(request->name_);
-            if (!statistics_opt) {
-                stats.push_back(make_shared<Stat>(RequestType::Error, request->id_));
-                break;
-            }
-            
-            stats.push_back(make_shared<StatBus>(statistics_opt.value(), RequestType::Bus, request->id_));
+vector<shared_ptr<Stat>> RequestHander::GetStats(const TransportCatalogue &transport_c) const {
+    vector<shared_ptr<Stat>> stats;
+
+    for (auto& request : stat_requests_) {
+        switch (request.type_) {
+        case RequestType::Bus:
+            PushBusStat(transport_c, request, stats);
             break;
-        }
         
-        case RequestType::Stop: {
-            StatStop stat_stop(RequestType::Stop, request->id_);
-            auto stop = transport_c.FindStop(request->name_);
-            if (stop == nullptr) {
-                stats.push_back(make_shared<Stat>(RequestType::Error, request->id_));
-                break;
-            }
-            stat_stop.buses_ = transport_c.FindBuses(request->name_);
-            stats.push_back(make_shared<StatStop>(move(stat_stop)));
+        case RequestType::Stop:
+            PushStopStat(transport_c, request, stats);
             break;
-        }
 
         default:
             break;
         }
     }
-
+    
     return stats;
+}
+
+void RequestHander::PushBusStat(const TransportCatalogue &transport_c, 
+    const Stat& stat, 
+    std::vector<std::shared_ptr<Stat>> &container) const {
+
+    auto statistics_opt = transport_c.GetRouteStatistics(stat.name_);
+    if (!statistics_opt) {
+        container.push_back(make_shared<Stat>(RequestType::Error, stat.id_));
+        return;
+    }
+    container.push_back(make_shared<StatBus>(statistics_opt.value(), RequestType::Bus, stat.id_));
+}
+
+void RequestHander::PushStopStat(const TransportCatalogue &transport_c, 
+    const Stat& stat,  
+    std::vector<std::shared_ptr<Stat>> &container) const {
+        
+    StatStop stat_stop(RequestType::Stop, stat.id_);
+    auto stop = transport_c.FindStop(stat.name_);
+    if (stop == nullptr) {
+        container.push_back(make_shared<Stat>(RequestType::Error, stat.id_));
+        return;
+    }
+    stat_stop.buses_ = transport_c.FindBuses(stat.name_);
+    container.push_back(make_shared<StatStop>(move(stat_stop)));
+    return;
 }

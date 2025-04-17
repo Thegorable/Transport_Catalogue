@@ -11,25 +11,49 @@
 using namespace std;
 
 void ReadAndWriteRequest(istream& in, ostream& out) {
-    TransportCatalogue catalogue;
     json::Document parsed_doc = json::Load(in);
 
-    vector<shared_ptr<Request>> requests_base = ReadBaseJsonRequests(parsed_doc);
-    vector<shared_ptr<Stat>> requests_stat = ReadStatJsonRequests(parsed_doc);
-    
-    ProvideInputRequests(requests_base, catalogue);
-    auto stats = GetStats(requests_stat, catalogue);
-    json::Document out_doc = BuildStatJsonOutput(stats);
+    RequestHander handler;
+    JsonReader reader;
+    reader.ReadBaseJsonRequests(parsed_doc, handler);
+    reader.ReadStatJsonRequests(parsed_doc, handler);
+
+    TransportCatalogue transfport_catalogue;
+    handler.ProvideInputRequests(transfport_catalogue);
+    auto stats = handler.GetStats(transfport_catalogue);
+    json::Document out_doc = reader.BuildStatJsonOutput(stats);
 
     json::PrintNode(out_doc, out);
 }
 
+void ReadAndRenderMap(istream& in, ostream& out) {
+    json::Document parsed_doc = json::Load(in);
+
+    RequestHander handler;
+    JsonReader reader;
+    reader.ReadBaseJsonRequests(parsed_doc, handler);
+
+    MapRenderer::RouteMap route_map;
+    reader.ReadRenderSettingsJson(parsed_doc, route_map);
+
+    TransportCatalogue transfport_catalogue;
+    handler.ProvideInputRequests(transfport_catalogue);
+
+    for (auto& bus_ptr : transfport_catalogue.GetAllBuses()) {
+        route_map.AddRoute(bus_ptr);
+    }
+
+    svg::Document doc_draw;
+    route_map.Draw(doc_draw);
+    doc_draw.Render(out);
+}
+
 int main() {
-    // ifstream in("H:\\Programming\\Training_projects\\Transport_Catalogue_tests_data\\json_testCase_2_input.json");
-    // ofstream file("H:\\Programming\\Training_projects\\Transport_Catalogue\\json_testCase_2_OutResult.json");
-    // ReadAndWriteRequest(in, file);
+    // ifstream in("H:\\Programming\\Training_projects\\Transport_Catalogue_tests_data\\render_testCase_1_input.json");
+    // ofstream file("H:\\Programming\\Training_projects\\Transport_Catalogue\\render_testCase_1_output_user.xml");
+    // ReadAndRenderMap(in, file);
     // file.close();
-    ReadAndWriteRequest(cin, cout);
+    ReadAndRenderMap(cin, cout);
     return 0;
 }
 

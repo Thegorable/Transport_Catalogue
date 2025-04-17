@@ -2,10 +2,10 @@
 
 using namespace std;
 
-vector<shared_ptr<Request>> ReadBaseJsonRequests(const json::Document& doc) {
-    vector<shared_ptr<Request>> requests;
-    const json::Array& base_requests = doc.GetRoot().AsMap().at("base_requests"s).AsArray();
+JsonReader::JsonReader() = default;
 
+void JsonReader::ReadBaseJsonRequests(const json::Document& doc, RequestHander& handler) {
+    const json::Array& base_requests = doc.GetRoot().AsMap().at("base_requests"s).AsArray();
     for (const auto& base_request : base_requests) {
         const auto& type = base_request.AsMap().at("type"s).AsString();
         
@@ -21,7 +21,7 @@ vector<shared_ptr<Request>> ReadBaseJsonRequests(const json::Document& doc) {
                 request_base_stop.neighbor_stops_.emplace_back(name_stop, dist_node.AsInt());
             }
 
-            requests.emplace_back(make_shared<RequestBaseStop>(move(request_base_stop)));
+            handler.AddRequest(move(request_base_stop));
             continue;
         }
 
@@ -34,36 +34,53 @@ vector<shared_ptr<Request>> ReadBaseJsonRequests(const json::Document& doc) {
             request_base_bus.route_.emplace_back(stop_node.AsString());
         }
         
-        requests.emplace_back(make_shared<RequestBaseBus>(move(request_base_bus)));
-    }
-
-    return requests;
+        handler.AddRequest(move(request_base_bus));
+    } 
 }
 
-std::vector<std::shared_ptr<Stat>> ReadStatJsonRequests(const json::Document &doc) {
-    vector<shared_ptr<Stat>> requests;
-    const json::Array& stat_requests = doc.GetRoot().AsMap().at("stat_requests"s).AsArray();
+void JsonReader::ReadStatJsonRequests(const json::Document& doc, RequestHander& handler) {
+    auto& result = doc.GetRoot().AsMap().at("stat_requests").AsArray();
 
-    for (const auto& stat_request : stat_requests) {
+    for (const auto& stat_request : result) {
         Stat request_format;
         request_format.id_ = stat_request.AsMap().at("id"s).AsInt();
         request_format.name_ = stat_request.AsMap().at("name"s).AsString();
         
-        const auto& type = stat_request.AsMap().at("type"s).AsString();
-        if (type == "Stop"s) {
+        if (stat_request.AsMap().at("type"s).AsString() == "Stop"s) {
             request_format.type_ = RequestType::Stop;
-            requests.emplace_back(make_shared<Stat>(move(request_format)));
+            handler.AddRequest(move(request_format));
             continue;
         }
 
         request_format.type_ = RequestType::Bus;
-        requests.emplace_back(make_shared<Stat>(move(request_format)));
+        handler.AddRequest(move(request_format));
     }
-
-    return requests;
 }
 
-json::Document BuildStatJsonOutput(const std::vector<std::shared_ptr<Stat>> &answers) {
+void JsonReader::ReadRenderSettingsJson(const json::Document& doc, MapRenderer::RouteMap& route_map) {
+    const json::Dict& settings = doc.GetRoot().AsMap().at("render_settings"s).AsMap();
+
+    route_map.SetMapSize({settings.at("width").AsDouble(), settings.at("height").AsDouble()}).
+    SetPadding(settings.at("padding").AsDouble()).SetBusLabelFontSize(settings.at("bus_label_font_size").AsInt()).
+    SetStopLabelFontSize(settings.at("stop_label_font_size").AsInt()).SetUnderLayerWidth(settings.at("underlayer_width").AsDouble()).
+    SetStopsRadius(settings.at("stop_radius").AsDouble()).SetLineWidth(settings.at("line_width").AsDouble());
+
+    const json::Array& bus_label_off = settings.at("bus_label_offset").AsArray();
+    const json::Array& stop_label_off = settings.at("stop_label_offset").AsArray();
+
+    route_map.SetBusLabelOffset(bus_label_off[0].AsDouble(), bus_label_off[1].AsDouble()).
+    SetStopLabelOffset(stop_label_off[0].AsDouble(), stop_label_off[1].AsDouble());
+
+    const auto& underlayer_color = settings.at("underlayer_color");
+    route_map.SetUnderLayerColor(ReadColor(underlayer_color));
+
+    const json::Array& color_palette = settings.at("color_palette").AsArray();
+    for (auto& color : color_palette) {
+        route_map.AddColorToPalette(ReadColor(color));
+    }
+}
+
+json::Document JsonReader::BuildStatJsonOutput(const std::vector<std::shared_ptr<Stat>>& answers) {
     json::Array arr;
 
     for (auto& answer : answers) {
@@ -71,7 +88,6 @@ json::Document BuildStatJsonOutput(const std::vector<std::shared_ptr<Stat>> &ans
         stat["request_id"s] = answer->id_;
 
         switch (answer->type_) {
-        
         case RequestType::Bus: {
             StatBus* ptr_stat = dynamic_cast<StatBus*>(answer.get());
             if (ptr_stat == nullptr) {
@@ -83,14 +99,12 @@ json::Document BuildStatJsonOutput(const std::vector<std::shared_ptr<Stat>> &ans
             stat["unique_stop_count"s] = ptr_stat->unique_stops_count_;
             arr.push_back(move(stat));
             break;
-        }
-        
+        }  
         case RequestType::Stop: {
             StatStop* ptr_stat = dynamic_cast<StatStop*>(answer.get());
             if (ptr_stat == nullptr) {
                 throw logic_error("Dynamic cust to StatStop is failed"s);
             }
-
             json::Array buses;
             if (ptr_stat->buses_ != nullptr) {
                 for (auto& bus : *ptr_stat->buses_) {
@@ -101,15 +115,34 @@ json::Document BuildStatJsonOutput(const std::vector<std::shared_ptr<Stat>> &ans
             arr.push_back(move(stat));
             break;
         }
-
         case RequestType::Error: {
             stat["error_message"] = "not found"s;
             arr.push_back(move(stat));
             break;
         }
-
         }
     }
 
     return json::Document(json::Node(arr));
+}
+
+svg::Color JsonReader::ReadColor(const json::Node& node) {
+    if (node.IsString()) {
+        return {node.AsString()};
+    }
+    
+    const json::Array& color_arr = node.AsArray();
+    if (color_arr.size() == 3) {
+        return (svg::Rgb{ static_cast<uint8_t>(color_arr[0].AsInt()), 
+            static_cast<uint8_t> (color_arr[1].AsInt()), 
+            static_cast<uint8_t>(color_arr[2].AsInt())});
+    }
+    else if (color_arr.size() == 4) {
+        return(svg::Rgba{ static_cast<uint8_t>(color_arr[0].AsInt()), 
+            static_cast<uint8_t> (color_arr[1].AsInt()), 
+            static_cast<uint8_t>(color_arr[2].AsInt()), 
+            color_arr[3].AsDouble()});
+    }
+
+    return {};
 }

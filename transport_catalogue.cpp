@@ -15,7 +15,7 @@ const Stop& TransportCatalogue::AddStop(const string_view &stop, Geo::Coordinate
     return new_stop_ref;
 }
 
-void TransportCatalogue::AddBus(const string_view &bus, const vector<std::string_view>& route) {
+void TransportCatalogue::AddBus(const string_view &bus, const vector<std::string_view>& route, bool is_round) {
     string bus_str(bus);
     if (buses_ptrs_.contains(bus_str)) {
         throw invalid_argument("Attempt to add existing bus: "s + bus_str + '\n');
@@ -28,7 +28,7 @@ void TransportCatalogue::AddBus(const string_view &bus, const vector<std::string
         new_route.emplace_back(stop_ptr);
     }
 
-    Bus& new_bus = buses_.emplace_front(move(bus_str), move(new_route));
+    Bus& new_bus = buses_.emplace_front(move(bus_str), move(new_route), is_round);
     for (auto& stop : new_bus.route_) {
         stops_routes_ptrs_[stop->name_].insert(&new_bus);
     }
@@ -91,6 +91,14 @@ const BusPtrsSet* TransportCatalogue::FindBuses(string_view stop) const {
     return &it->second;
 }
 
+vector<const Bus*> TransportCatalogue::GetAllBuses() const {
+    vector<const Bus*> result;
+    for (auto& bus : buses_) {
+        result.push_back(&bus);
+    }
+    return result;
+}
+
 double TransportCatalogue::GetRouteLength(string_view bus) const {
     const Bus* bus_ptr = buses_ptrs_.at(bus);
     const vector<Stop*>& route = bus_ptr->route_;
@@ -122,8 +130,4 @@ uint32_t TransportCatalogue::GetRealRouteLength(std::string_view bus) const {
     }
 
     return total_distance;
-}
-
-void Stop::AddNeighborStop(Stop *stop_ptr, uint32_t distance) {
-    neighbor_stops_dist_[stop_ptr] = distance;    
 }

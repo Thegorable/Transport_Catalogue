@@ -56,10 +56,12 @@ public:
     bool IsMap() const;
 
     const Array& AsArray() const;
+    const Array& AsArray(const std::string& m) const;
     const Dict& AsMap() const;
     bool AsBool() const;
     int AsInt() const;
     double AsDouble() const;
+    double AsDouble(const std::string& m) const;
     const std::string& AsString() const;
     std::nullptr_t AsNull() const;
 
