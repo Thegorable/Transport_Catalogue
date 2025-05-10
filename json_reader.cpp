@@ -45,14 +45,21 @@ void JsonReader::ReadStatJsonRequests(const json::Document& doc, RequestHander& 
         Stat request_format;
         request_format.id_ = stat_request.AsMap().at("id"s).AsInt();
         request_format.name_ = stat_request.AsMap().at("name"s).AsString();
+
+        auto& type_request = stat_request.AsMap().at("type"s).AsString();
         
-        if (stat_request.AsMap().at("type"s).AsString() == "Stop"s) {
+        if (type_request == "Stop"s) {
             request_format.type_ = RequestType::Stop;
-            handler.AddRequest(move(request_format));
-            continue;
         }
 
-        request_format.type_ = RequestType::Bus;
+        else if (type_request == "Bus"s) {
+            request_format.type_ = RequestType::Bus;
+        }
+
+        else if (type_request == "Bus"s) {
+            request_format.type_ = RequestType::Map;
+        }
+
         handler.AddRequest(move(request_format));
     }
 }
@@ -115,6 +122,15 @@ json::Document JsonReader::BuildStatJsonOutput(const std::vector<std::shared_ptr
             arr.push_back(move(stat));
             break;
         }
+        case RequestType::Map: {
+            StatMap* ptr_stat = dynamic_cast<StatMap*>(answer.get());
+            if (ptr_stat == nullptr) {
+                throw logic_error("Dynamic cust to StatMap is failed"s);
+            }
+            auto& map_drawn = ptr_stat->map_;
+            stat["map"] = "str"s;
+        }
+
         case RequestType::Error: {
             stat["error_message"] = "not found"s;
             arr.push_back(move(stat));

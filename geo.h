@@ -12,7 +12,7 @@ const int EARTH_RADIUS = 6371000;
 namespace Utility
 {
 
-template<typename integer>
+template<std::integral integer>
 integer GetCycleInterger(integer start, integer end, integer input) {
     if (input == start) {
         return 0;
@@ -20,7 +20,7 @@ integer GetCycleInterger(integer start, integer end, integer input) {
     return (input - start) % (end - start);
 }
 
-template<typename integer>
+template<std::integral integer>
 class CycleIndex {
     public:
         explicit CycleIndex(integer max) : max_(max) {}
@@ -87,7 +87,7 @@ namespace Geo {
 
     class SphereProjector {
     public:
-        template <typename CoordinatesIt>
+        template <std::forward_iterator CoordinatesIt>
         SphereProjector(CoordinatesIt points_begin, CoordinatesIt points_end,
                         double max_width, double max_height, double padding);
 
@@ -100,7 +100,7 @@ namespace Geo {
         double zoom_coeff_ = 0;
     };
 
-    template <typename CoordinatesIt>
+    template <std::forward_iterator CoordinatesIt>
     inline SphereProjector::SphereProjector(CoordinatesIt points_begin, CoordinatesIt points_end,
         double max_width, double max_height, double padding)
     : padding_(padding) {

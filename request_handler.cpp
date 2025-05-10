@@ -11,12 +11,13 @@ StatStop::StatStop(RequestType type, int id) : Stat(type, id) {}
 StatBus::StatBus(const RouteStatistics& parent, RequestType type, int id) 
 : RouteStatistics(parent), Stat(type, id) {}
 
+StatMap::StatMap(RequestType type, int id) : Stat(type, id) {}
+
 RequestBaseStop::RequestBaseStop(RequestType type, Geo::Coordinates coords)
 : Request(type), coords_(coords) {}
 
 RequestBaseBus::RequestBaseBus(RequestType type, bool is_round_trip)
 : Request(type), is_round_trip_(is_round_trip) {}
-
 
 RequestHander::RequestHander() = default;
 
@@ -55,6 +56,7 @@ void StatStop::MoveToHandler(RequestHander &handler) {
 void Stat::MoveToHandler(RequestHander &handler) {
     handler.AddRequest(*this);
 }
+
 void RequestHander::ProvideInputRequests(TransportCatalogue &transport_c) {
     for (auto& stop_target : base_stop_requests_) {
         transport_c.AddStop(stop_target.name_, stop_target.coords_);
@@ -79,7 +81,8 @@ void RequestHander::ProvideInputRequests(TransportCatalogue &transport_c) {
     }
 }
 
-vector<shared_ptr<Stat>> RequestHander::GetStats(const TransportCatalogue &transport_c) const {
+vector<shared_ptr<Stat>> RequestHander::GetStats(const TransportCatalogue &transport_c, 
+    const MapRenderer::RouteMap& route_map) const {
     vector<shared_ptr<Stat>> stats;
 
     for (auto& request : stat_requests_) {
@@ -90,6 +93,10 @@ vector<shared_ptr<Stat>> RequestHander::GetStats(const TransportCatalogue &trans
         
         case RequestType::Stop:
             PushStopStat(transport_c, request, stats);
+            break;
+
+        case RequestType::Map:
+            PushMapStat(route_map, request, stats);
             break;
 
         default:
@@ -125,4 +132,13 @@ void RequestHander::PushStopStat(const TransportCatalogue &transport_c,
     stat_stop.buses_ = transport_c.FindBuses(stat.name_);
     container.push_back(make_shared<StatStop>(move(stat_stop)));
     return;
+}
+
+void RequestHander::PushMapStat(const MapRenderer::RouteMap& route_map, 
+    const Stat &stat, 
+    std::vector<std::shared_ptr<Stat>> &container) const {
+
+    StatMap drawn_map(RequestType::Map, stat.id_);
+    route_map.Draw(drawn_map.map_);
+    container.push_back(make_shared<StatMap>(move(drawn_map)));
 }

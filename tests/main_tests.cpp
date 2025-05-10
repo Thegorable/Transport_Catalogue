@@ -15,7 +15,6 @@
 using namespace std;
 
 void CompareStrings(const string& input, const string& comparator, ostream& your_out, ostream& compare_out) {
-    // Helper to split string into lines
     auto SplitLines = [](const string& str) {
         vector<string> lines;
         istringstream iss(str);
@@ -29,42 +28,35 @@ void CompareStrings(const string& input, const string& comparator, ostream& your
     vector<string> input_lines = SplitLines(input);
     vector<string> comparator_lines = SplitLines(comparator);
 
-    // your_out << "Your string:\n\n";
     size_t max_lines = max(input_lines.size(), comparator_lines.size());
 
     for (size_t i = 0; i < input_lines.size(); ++i) {
         your_out << input_lines[i];
         if (i < comparator_lines.size()) {
             if (input_lines[i] == comparator_lines[i]) {
-                // your_out << " OK!\n";
-                your_out << "\n";
+                your_out << " OK!\n";
             } else {
-                // your_out << " Wrong!\n";
-                your_out << "\n";
+                your_out << " Wrong!\n";
             }
         } else {
-            // your_out << " Wrong!\n";
-            your_out << "\n";
+            your_out << " Wrong!\n";
         }
     }
 
-    // compare_out << "\n\nCompare string:\n\n";
+    compare_out << "\n\nCompare string:\n\n";
 
     for (size_t i = 0; i < comparator_lines.size(); ++i) {
         compare_out << comparator_lines[i];
         if (i >= input_lines.size()) {
-            // compare_out << " Not exists!\n";
-            compare_out << "\n";
+            compare_out << " Not exists!\n";
         } else if (comparator_lines[i] != input_lines[i]) {
-            // compare_out << " Wrong!\n";
-            compare_out << "\n";
+            compare_out << " Wrong!\n";
         } else {
-            // compare_out << '\n';
-            compare_out << "\n";
+            compare_out << '\n';
         }
     }
 
-    // compare_out << "\n\n";
+    compare_out << "\n\n";
 }
 
 string ReadFStream(ifstream& in) {
@@ -132,6 +124,7 @@ string ExecuteMapRender(fs::path in, bool print_result = false, ostream& out_sou
     for (auto& bus_ptr : transfport_catalogue.GetAllBuses()) {
         route_map.AddRoute(bus_ptr);
     }
+    route_map.ReorderRouteColors();
 
     svg::Document doc_draw;
     stringstream output;
@@ -195,41 +188,47 @@ DEFINE_TEST_G(Json_Main, MainTests) {
     }
 }
 
-DEFINE_TEST_G(TransportCatalogue_Render_Main, MainRenderTests) {
+DEFINE_TEST_G(TransportCatalogue_Render_Main, MainRenderTests) {    
     {
-        // string str_rec = ExecuteMapRender(TESTS_PATH / IN_FILE_RENDER_2);
-        // ifstream stream_out(TESTS_PATH / OUT_FILE_RENDER_2);
-        // string test_file = ReadFStream(stream_out);
-        // cout << "Out xml:\n\n" << test_file << "\n\n";
-        // CompareStrings(str_rec, test_file);
-        // TEST(str_rec == test_file);
-    }
-
-    {
-        string str_rec = ExecuteMapRender(TESTS_PATH / IN_FILE_RENDER_3);
-        ifstream stream_out(TESTS_PATH / OUT_FILE_RENDER_3);
+        string str_rec = ExecuteMapRender(TESTS_PATH / IN_FILE_RENDER_2);
+        ifstream stream_out(TESTS_PATH / OUT_FILE_RENDER_2);
         string test_file = ReadFStream(stream_out);
-        // cout << "Out xml:\n\n" << test_file << "\n\n";
-        ofstream your(TESTS_PATH / "Your.xml"s);
-        ofstream compare(TESTS_PATH / "Compare.xml"s);
-        CompareStrings(str_rec, test_file, your, compare);
-        your.close();
-        compare.close();
         TEST(str_rec == test_file);
     }
 
     {
-        // string str_rec = ExecuteMapRender(TESTS_PATH / IN_FILE_RENDER_4);
-        // ifstream stream_out(TESTS_PATH / OUT_FILE_RENDER_4);
-        // string test_file = ReadFStream(stream_out);
-        // cout << "Out xml:\n\n" << test_file << "\n\n";
-        // CompareStrings(str_rec, test_file);
-        // TEST(str_rec == test_file);
+        string str_rec = ExecuteMapRender(TESTS_PATH / IN_FILE_RENDER_7);
+        ifstream stream_out(TESTS_PATH / OUT_FILE_RENDER_7);
+        string test_file = ReadFStream(stream_out);
+        TEST(str_rec == test_file);
+    }
+
+    {
+        string str_rec = ExecuteMapRender(TESTS_PATH / IN_FILE_RENDER_12);
+        ifstream stream_out(TESTS_PATH / OUT_FILE_RENDER_12);
+        string test_file = ReadFStream(stream_out);
+        TEST(str_rec == test_file);
+    }
+
+    {
+        string str_rec = ExecuteMapRender(TESTS_PATH / IN_FILE_RENDER_23);
+        ifstream stream_out(TESTS_PATH / OUT_FILE_RENDER_23);
+        string test_file = ReadFStream(stream_out);
+        TEST(str_rec == test_file);
+    }
+}
+
+DEFINE_TEST_G(TransportCatalogue_Map_Main, MainMapTests) {    
+    {
+        string str_rec = ExecuteMapRender(TESTS_PATH / IN_FILE_MAP_DEF);
+        ifstream stream_out(TESTS_PATH / OUT_FILE_MAP_DEF);
+        string test_file = ReadFStream(stream_out);
+        TEST(str_rec == test_file);
     }
 }
 
 int main() {
-    TestFixture::ExecuteTestGroup("MainRenderTests");
+    TestFixture::ExecuteTestGroup("MainMapTests");
     // TestFixture::ExecuteAllTests();
     return 0;
 }

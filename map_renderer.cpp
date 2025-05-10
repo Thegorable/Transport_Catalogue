@@ -21,10 +21,10 @@ public:
     pointer operator->() const { return &(*it_)->coords_; }
 
     CoordinatesIt operator ++(int) {auto prev = *this; it_++; return prev;}
-    CoordinatesIt operator ++() {it_++; return *this;}
+    CoordinatesIt& operator ++() {it_++; return *this;}
 
-    bool operator ==(const CoordinatesIt& other) {return it_ == other.it_; }
-    bool operator !=(const CoordinatesIt& other) {return !(*this == other); }
+    bool operator ==(const CoordinatesIt& other) const {return it_ == other.it_; }
+    bool operator !=(const CoordinatesIt& other) const {return !(*this == other); }
 
 private:
     std::set<const Stop*>::const_iterator it_;
@@ -50,15 +50,22 @@ RouteMap::RouteMap() = default;
 const Route& RouteMap::AddRoute(const Bus *bus_ptr) {
     Route new_route;
     new_route.bus_ptr_ = bus_ptr;
-    new_route.color_ = color_palette_.at(Utility::GetCycleInterger(size_t(0), color_palette_.size() - 1, routes_.size()));
     for (auto& stop : bus_ptr->route_) {
         stops_ptrs_.insert(stop);
     }
-    auto result = routes_.insert(new_route);
+    auto result = routes_.insert({&(bus_ptr->name_), move(new_route)});
     if (!result.second) {
         throw runtime_error("The adding new route was unsucsessful"s);
     }
-    return *result.first;
+    return result.first->second;
+}
+
+void RouteMap::ReorderRouteColors() {
+    size_t i = 0;
+    for (auto& [name_ptr, route] : routes_) {
+        route.color_ = color_palette_.at(Utility::GetCycleInterger(size_t(0), color_palette_.size(), i));
+        i++;
+    }
 }
 
 RouteMap &RouteMap::SetMapSize(MapSize map_size) {
@@ -118,13 +125,14 @@ void RouteMap::AddColorToPalette(const svg::Color& color) {
 }
 
 void RouteMap::DrawRoutesLines(svg::ObjectContainer &container, const Geo::SphereProjector& projector) const {
-    for (auto& route : routes_) {
+    for (auto& [name_bus_ptr, route] : routes_) {
         svg::Polyline line;
         line.SetStrokeLineCap(svg::StrokeLineCap::ROUND).SetStrokeLineJoin(svg::StrokeLineJoin::ROUND).SetFillColor(svg::NoneColor).
         SetStrokeWidth(line_width_).SetStrokeColor(route.color_);
 
         for (auto& stop : route.bus_ptr_->route_) {
-            line.AddPoint(projector.RescaleCoordinates(stop->coords_));
+            svg::Point new_coords = projector.RescaleCoordinates(stop->coords_);
+            line.AddPoint(new_coords);
         }
 
         container.AddObject(line);
@@ -132,13 +140,15 @@ void RouteMap::DrawRoutesLines(svg::ObjectContainer &container, const Geo::Spher
 }
 
 void RouteMap::DrawRoutesNames(svg::ObjectContainer& container, const Geo::SphereProjector& projector) const {
-    for (auto& route : routes_) {
+    for (auto& [name_bus_ptr, route] : routes_) {
         if (route.bus_ptr_->route_.empty()) {
             continue;
         }
 
         vector<svg::Text> texts(2);
-        if (!route.bus_ptr_->is_round_) {
+        auto& bus = *route.bus_ptr_;
+        size_t mid_id = bus.route_.size() / 2;
+        if (!bus.is_round_ && (bus.route_.front() != bus.route_[mid_id])) {
             texts.resize(4);
         }
 
@@ -148,7 +158,7 @@ void RouteMap::DrawRoutesNames(svg::ObjectContainer& container, const Geo::Spher
                     texts[d].SetPosition(projector.RescaleCoordinates(route.bus_ptr_->route_.front()->coords_));
                 }
                 else {
-                    auto& pre_end_bus = route.bus_ptr_->route_[route.bus_ptr_->route_.size() - 2];
+                    auto& pre_end_bus = route.bus_ptr_->route_[route.bus_ptr_->route_.size() / 2];
                     texts[d].SetPosition(projector.RescaleCoordinates(pre_end_bus->coords_));
                 }
 

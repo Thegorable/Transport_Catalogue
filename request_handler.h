@@ -1,8 +1,9 @@
 #pragma once
 #include <memory>
 #include "transport_catalogue.h"
+#include "map_renderer.h"
 
-enum class RequestType {Bus, Stop, Error};
+enum class RequestType {Bus, Stop, Map, Error};
 
 class RequestHander;
 
@@ -54,6 +55,11 @@ struct StatBus : public RouteStatistics, public Stat {
     void MoveToHandler(RequestHander& handler) override;
 };
 
+struct StatMap : public Stat {
+    StatMap(RequestType type = RequestType::Map, int id = 0);
+    svg::Document map_;
+};
+
 class RequestHander {
 public:
     RequestHander();
@@ -68,6 +74,9 @@ private:
         const Stat& stat, 
         std::vector<std::shared_ptr<Stat>>& container) const;
     void PushStopStat(const TransportCatalogue& transport_c, 
+        const Stat& stat, 
+        std::vector<std::shared_ptr<Stat>>& container) const;
+    void PushMapStat(const MapRenderer::RouteMap& route_map, 
         const Stat& stat, 
         std::vector<std::shared_ptr<Stat>>& container) const;
     std::vector<RequestBaseStop> base_stop_requests_;

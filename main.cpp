@@ -42,6 +42,7 @@ void ReadAndRenderMap(istream& in, ostream& out) {
     for (auto& bus_ptr : transfport_catalogue.GetAllBuses()) {
         route_map.AddRoute(bus_ptr);
     }
+    route_map.ReorderRouteColors();
 
     svg::Document doc_draw;
     route_map.Draw(doc_draw);

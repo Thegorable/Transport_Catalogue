@@ -2,6 +2,7 @@
 
 #include "svg.h" 
 #include "domain.h"
+#include <map>
 
 using namespace std::literals;
 
@@ -40,14 +41,16 @@ public:
     RouteMap& SetUnderLayerWidth(double width);
     void AddColorToPalette(const svg::Color& color);
     const Route& AddRoute(const Bus* bus_ptr);
+    void ReorderRouteColors();
 
 private:
     void DrawRoutesLines(svg::ObjectContainer& container, const Geo::SphereProjector& projector) const;
     void DrawRoutesNames(svg::ObjectContainer& container, const Geo::SphereProjector& projector) const;
     void DrawStopCircles(svg::ObjectContainer& container, const Stop& stop, const Geo::SphereProjector& projector) const;
     void DrawStopName(svg::ObjectContainer& container, const Stop& stop, const Geo::SphereProjector& projector) const;
+    const svg::Color& GetRouteColor() const;
 
-    std::set<Route> routes_;
+    std::map<const std::string*, Route, PtrsComparator<std::string>> routes_;
     std::set<const Stop*, PtrsComparator<Stop>> stops_ptrs_;
     MapSize map_size_;
     double padding_ = 0.0;

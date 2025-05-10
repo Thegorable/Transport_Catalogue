@@ -185,6 +185,13 @@ void Document::Render(ostream& out) const {
     out << "</svg>"sv;
 }
 
+void Document::Render(std::string &str) const {
+    str += "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\\n"s +
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\\n"s;
+
+    str += "</svg>\\n"s;
+}
+
 Polyline CreateStar(Point center, double outer_rad, double inner_rad, int num_rays) {
     using namespace svg;
     Polyline polyline;

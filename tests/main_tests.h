@@ -34,8 +34,6 @@ const fs::path OUT_FILE_JSON_5 = "json_testCase_5_output.json";
 const fs::path IN_FILE_JSON_6 = "json_testCase_6_input.json";
 const fs::path OUT_FILE_JSON_6 = "json_testCase_6_output.json";
 
-const fs::path IN_FILE_RENDER_1 = "render_testCase_1_input.json";
-const fs::path OUT_FILE_RENDER_1 = "render_testCase_1_output.xml";
 const fs::path IN_FILE_RENDER_2 = "render_testCase_2_input.json";
 const fs::path OUT_FILE_RENDER_2 = "render_testCase_2_output.xml";
 const fs::path IN_FILE_RENDER_3 = "render_testCase_3_input.json";
@@ -44,6 +42,17 @@ const fs::path IN_FILE_RENDER_4 = "render_testCase_4_input.json";
 const fs::path OUT_FILE_RENDER_4 = "render_testCase_4_output.xml";
 const fs::path IN_FILE_RENDER_5 = "render_testCase_5_input.json";
 const fs::path OUT_FILE_RENDER_5 = "render_testCase_5_output.xml";
+const fs::path IN_FILE_RENDER_7 = "render_testCase_7_input.json";
+const fs::path OUT_FILE_RENDER_7 = "render_testCase_7_output.xml";
+const fs::path IN_FILE_RENDER_12 = "render_testCase_12_input.json";
+const fs::path OUT_FILE_RENDER_12 = "render_testCase_12_output.xml";
+const fs::path IN_FILE_RENDER_23 = "render_testCase_23_input.json";
+const fs::path OUT_FILE_RENDER_23 = "render_testCase_23_output.xml";
+const fs::path IN_FILE_RENDER_9 = "render_testCase_9_input.json";
+const fs::path OUT_FILE_RENDER_9 = "render_testCase_9_output.xml";
+
+const fs::path IN_FILE_MAP_DEF = "map_testCase_default_input.json";
+const fs::path OUT_FILE_MAP_DEF = "map_testCase_default_output.json";
 
 void CompareStrings(const std::string& input, const std::string& comparator, 
 	std::ostream& your_out = std::cout, std::ostream& compare_out = std::cout);
