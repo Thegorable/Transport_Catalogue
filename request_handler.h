@@ -68,7 +68,8 @@ public:
     void AddRequest(RequestBaseStop&&  request_base_stop);
     void AddRequest(Stat&& request_stat);
     void ProvideInputRequests(TransportCatalogue& transport_c);
-    std::vector<std::shared_ptr<Stat>> GetStats(const TransportCatalogue& transport_c) const;
+    std::vector<std::shared_ptr<Stat>> GetStats(const TransportCatalogue& transport_c, 
+        const std::optional<MapRenderer::RouteMap>& route_map = std::nullopt) const;
 private:
     void PushBusStat(const TransportCatalogue& transport_c, 
         const Stat& stat, 

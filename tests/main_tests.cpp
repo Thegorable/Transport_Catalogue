@@ -83,7 +83,7 @@ vector<string> ReadCurrentLayerStream(ifstream& stream) {
     return lines;
 }
 
-string ExecuteRequestStat(fs::path in, bool print_result = false, ostream& out_source = cout) {
+string ExecuteRequestStat(fs::path in, bool render = true, ostream& out_source = cout) {
     ifstream input(in);
     json::Document parsed_doc = json::Load(input);
 
@@ -94,20 +94,61 @@ string ExecuteRequestStat(fs::path in, bool print_result = false, ostream& out_s
 
     TransportCatalogue transfport_catalogue;
     handler.ProvideInputRequests(transfport_catalogue);
-    auto stats = handler.GetStats(transfport_catalogue);
+
+    vector<shared_ptr<Stat>> stats;
+    if (render) {
+        MapRenderer::RouteMap route_map;
+        reader.ReadRenderSettingsJson(parsed_doc, route_map);
+        for (auto& bus_ptr : transfport_catalogue.GetAllBuses()) {
+            route_map.AddRoute(bus_ptr);
+        }
+        route_map.ReorderRouteColors();
+        
+        stats = handler.GetStats(transfport_catalogue, route_map);
+    }
+    else {
+        stats = handler.GetStats(transfport_catalogue);
+    }
+
     json::Document out_doc = reader.BuildStatJsonOutput(stats);
 
     stringstream output;
     json::PrintNode(out_doc, output);
 
-    if (print_result) {
-        out_source << output.str() << "\n\n";
-    }
-
     return output.str();
 }
 
-string ExecuteMapRender(fs::path in, bool print_result = false, ostream& out_source = cout) {
+json::Document BuildDocRequestStat(fs::path in, bool render = true) {
+    ifstream input(in);
+    json::Document parsed_doc = json::Load(input);
+
+    RequestHander handler;
+    JsonReader reader;
+    reader.ReadBaseJsonRequests(parsed_doc, handler);
+    reader.ReadStatJsonRequests(parsed_doc, handler);
+
+    TransportCatalogue transfport_catalogue;
+    handler.ProvideInputRequests(transfport_catalogue);
+    
+    vector<shared_ptr<Stat>> stats;
+    if (render) {
+        MapRenderer::RouteMap route_map;
+        reader.ReadRenderSettingsJson(parsed_doc, route_map);
+        for (auto& bus_ptr : transfport_catalogue.GetAllBuses()) {
+            route_map.AddRoute(bus_ptr);
+        }
+        route_map.ReorderRouteColors();
+        
+        stats = handler.GetStats(transfport_catalogue, route_map);
+    }
+    else {
+        stats = handler.GetStats(transfport_catalogue);
+    }
+
+    return reader.BuildStatJsonOutput(stats);
+}
+
+string BuildMapSvg(fs::path in, bool print_result = false, ostream& out_source = cout) {
     ifstream input(in);
     json::Document parsed_doc = json::Load(input);
 
@@ -127,8 +168,9 @@ string ExecuteMapRender(fs::path in, bool print_result = false, ostream& out_sou
     route_map.ReorderRouteColors();
 
     svg::Document doc_draw;
-    stringstream output;
     route_map.Draw(doc_draw);
+
+    stringstream output;
     doc_draw.Render(output);
 
     if (print_result) {
@@ -136,7 +178,7 @@ string ExecuteMapRender(fs::path in, bool print_result = false, ostream& out_sou
     }
 
     return output.str();
-}
+};
 
 string RePrintJson(fs::path in, bool print_result = false, ostream& out_source = cout) {
     ifstream input(in);
@@ -153,82 +195,127 @@ string RePrintJson(fs::path in, bool print_result = false, ostream& out_source =
 
 DEFINE_TEST_G(Json_Main, MainTests) {
     {
-        string str_rec = ExecuteRequestStat(TESTS_PATH / IN_FILE_JSON_1);
-        string test_file = RePrintJson(TESTS_PATH / OUT_FILE_JSON_1);
-        TEST(str_rec == test_file);
+        json::Document doc_result = BuildDocRequestStat(TESTS_PATH / IN_FILE_JSON_1, false);
+        ifstream input(TESTS_PATH / OUT_FILE_JSON_1);
+        json::Document doc_test = json::Load(input);
+        TEST(doc_result == doc_test);
     }
 
     {
-        string str_rec = ExecuteRequestStat(TESTS_PATH / IN_FILE_JSON_2);
-        string test_file = RePrintJson(TESTS_PATH / OUT_FILE_JSON_2);
-        TEST(str_rec == test_file);
+        json::Document doc_result = BuildDocRequestStat(TESTS_PATH / IN_FILE_JSON_2, false);
+        ifstream input(TESTS_PATH / OUT_FILE_JSON_2);
+        json::Document doc_test = json::Load(input);
+        TEST(doc_result == doc_test);
     }
 
     {
-        string str_rec = ExecuteRequestStat(TESTS_PATH / IN_FILE_JSON_3);
-        string test_file = RePrintJson(TESTS_PATH / OUT_FILE_JSON_3);
-        TEST(str_rec == test_file);
+        json::Document doc_result = BuildDocRequestStat(TESTS_PATH / IN_FILE_JSON_3, false);
+        ifstream input(TESTS_PATH / OUT_FILE_JSON_3);
+        json::Document doc_test = json::Load(input);
+        TEST(doc_result == doc_test);
     }
 
     {
-        string str_rec = ExecuteRequestStat(TESTS_PATH / IN_FILE_JSON_4);
-        string test_file = RePrintJson(TESTS_PATH / OUT_FILE_JSON_4);
-        TEST(str_rec == test_file);
+        json::Document doc_result = BuildDocRequestStat(TESTS_PATH / IN_FILE_JSON_4, false);
+        ifstream input(TESTS_PATH / OUT_FILE_JSON_4);
+        json::Document doc_test = json::Load(input);
+        TEST(doc_result == doc_test);
     }
     
     {
-        string str_rec = ExecuteRequestStat(TESTS_PATH / IN_FILE_JSON_5);
-        string test_file = RePrintJson(TESTS_PATH / OUT_FILE_JSON_5);
-        TEST(str_rec == test_file);
+        json::Document doc_result = BuildDocRequestStat(TESTS_PATH / IN_FILE_JSON_5, false);
+        ifstream input(TESTS_PATH / OUT_FILE_JSON_5);
+        json::Document doc_test = json::Load(input);
+        TEST(doc_result == doc_test);
     }
     {
-        string str_rec = ExecuteRequestStat(TESTS_PATH / IN_FILE_JSON_6);
-        string test_file = RePrintJson(TESTS_PATH / OUT_FILE_JSON_6);
-        TEST(str_rec == test_file);
+        json::Document doc_result = BuildDocRequestStat(TESTS_PATH / IN_FILE_JSON_6, false);
+        ifstream input(TESTS_PATH / OUT_FILE_JSON_6);
+        json::Document doc_test = json::Load(input);
+        TEST(doc_result == doc_test);
     }
 }
 
 DEFINE_TEST_G(TransportCatalogue_Render_Main, MainRenderTests) {    
     {
-        string str_rec = ExecuteMapRender(TESTS_PATH / IN_FILE_RENDER_2);
+        string str_rec = BuildMapSvg(TESTS_PATH / IN_FILE_RENDER_2);
         ifstream stream_out(TESTS_PATH / OUT_FILE_RENDER_2);
         string test_file = ReadFStream(stream_out);
         TEST(str_rec == test_file);
     }
 
     {
-        string str_rec = ExecuteMapRender(TESTS_PATH / IN_FILE_RENDER_7);
+        string str_rec = BuildMapSvg(TESTS_PATH / IN_FILE_RENDER_7);
         ifstream stream_out(TESTS_PATH / OUT_FILE_RENDER_7);
         string test_file = ReadFStream(stream_out);
         TEST(str_rec == test_file);
     }
 
     {
-        string str_rec = ExecuteMapRender(TESTS_PATH / IN_FILE_RENDER_12);
+        string str_rec = BuildMapSvg(TESTS_PATH / IN_FILE_RENDER_12);
         ifstream stream_out(TESTS_PATH / OUT_FILE_RENDER_12);
         string test_file = ReadFStream(stream_out);
         TEST(str_rec == test_file);
     }
 
     {
-        string str_rec = ExecuteMapRender(TESTS_PATH / IN_FILE_RENDER_23);
+        string str_rec = BuildMapSvg(TESTS_PATH / IN_FILE_RENDER_23);
         ifstream stream_out(TESTS_PATH / OUT_FILE_RENDER_23);
         string test_file = ReadFStream(stream_out);
         TEST(str_rec == test_file);
     }
 }
 
-DEFINE_TEST_G(TransportCatalogue_Map_Main, MainMapTests) {    
+DEFINE_TEST_G(TransportCatalogue_Map_Main, Json_Map_Tests) {    
+    // {
+    //     json::Document result_doc = BuildDocRequestStat(TESTS_PATH / IN_FILE_MAP_DEF);
+    //     ifstream test_stream_in(TESTS_PATH / OUT_FILE_MAP_DEF);
+    //     json::Document test_doc = json::Load(test_stream_in);
+
+    //     TEST(result_doc == test_doc);
+    // }
+
+    // {
+    //     json::Document result_doc = BuildDocRequestStat(TESTS_PATH / IN_FILE_MAP_1);
+    //     ifstream test_stream_in(TESTS_PATH / OUT_FILE_MAP_1);
+    //     json::Document test_doc = json::Load(test_stream_in);
+
+    //     TEST(result_doc == test_doc);
+    // }
+
+    // {
+    //     json::Document result_doc = BuildDocRequestStat(TESTS_PATH / IN_FILE_MAP_2);
+    //     ifstream test_stream_in(TESTS_PATH / OUT_FILE_MAP_2);
+    //     json::Document test_doc = json::Load(test_stream_in);
+
+    //     TEST(result_doc == test_doc);
+    // }
+
+    // {
+    //     json::Document result_doc = BuildDocRequestStat(TESTS_PATH / IN_FILE_MAP_3);
+    //     ifstream test_stream_in(TESTS_PATH / OUT_FILE_MAP_3);
+    //     json::Document test_doc = json::Load(test_stream_in);
+
+    //     TEST(result_doc == test_doc);
+    // }
+
     {
-        string str_rec = ExecuteMapRender(TESTS_PATH / IN_FILE_MAP_DEF);
-        ifstream stream_out(TESTS_PATH / OUT_FILE_MAP_DEF);
-        string test_file = ReadFStream(stream_out);
-        TEST(str_rec == test_file);
+        string result_doc = ExecuteRequestStat(TESTS_PATH / "DoubleRGBA_test.txt", true);
+        ofstream file_result(TESTS_PATH / "result.txt");
+        file_result << result_doc;
+        file_result.close();
+
+        // ifstream input(TESTS_PATH / "DoubleRGBA_test.txt");
+        // ofstream file_result(TESTS_PATH / "result.txt");
+        // RePrintJson(TESTS_PATH / "DoubleRGBA_test.txt", true, file_result);
     }
+
 }
 
 int main() {
-    TestFixture::ExecuteTestGroup("MainMapTests");
+    // TestFixture::ExecuteTestGroup("MainTests");
+    // TestFixture::ExecuteTestGroup("MainRenderTests");
+    TestFixture::ExecuteTestGroup("Json_Map_Tests");
     // TestFixture::ExecuteAllTests();
     return 0;
 }

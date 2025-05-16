@@ -7,26 +7,65 @@
 #include <vector>
 #include <variant>
 #include <limits>
-
-inline bool IsEqualDouble(double l, double r) {
-    return std::abs(l - r) < std::numeric_limits<double>::epsilon();
-}
+#include <type_traits>
+#include <sstream>
 
 namespace svg {
 
-struct Rgb {
-    Rgb() = default;
-    Rgb(uint8_t r, uint8_t g, uint8_t b) :
-    red(r), green(g), blue(b) {}
-    Rgb(const Rgb& other) : 
-    red(other.red), green(other.green), blue(other.blue) {}
+using namespace std::literals;
 
-    Rgb& operator =(const Rgb& other) {
-        red = other.red;
-        green = other.green;
-        blue = other.blue;
-        return *this;
+template<class T>
+concept ToOstream = requires(std::ostream& out, T value) {
+    out << value;
+};
+
+template<class T>
+concept ToString = requires(T value) {
+    std::to_string(value);
+};
+
+template<class T>
+concept StringConvertible = ToString<T> ||
+std::is_convertible<T, std::string>::value ||
+std::constructible_from<T, std::string> ||
+std::same_as<T, char>;
+
+template <std::floating_point T>
+class FloatConverter {
+public:
+    FloatConverter() = default;
+
+    std::string operator () (T value) {
+        std::string result;
+        converter_ << value;
+        converter_ >> result;
+        converter_.clear();
+        return result;
     }
+
+private:
+    std::stringstream converter_;
+};
+
+template <class T>
+std::string ToStringGeneric(const T& val) {
+    if constexpr (std::is_convertible_v<T, std::string>) {
+        return val;
+    }
+    if constexpr (ToString<T>) {
+        return std::to_string(val);
+    }
+    
+    throw std::logic_error("ToStringGeneric was unsuccessful"s);
+};
+
+struct Rgb {
+    Rgb();
+    Rgb(uint8_t r, uint8_t g, uint8_t b);
+    Rgb(const Rgb& other);
+
+    Rgb& operator =(const Rgb& other);
+    operator std::string() const;
 
     uint8_t red = 0;
     uint8_t green = 0;
@@ -34,30 +73,18 @@ struct Rgb {
 };
 
 struct Rgba : public Rgb {
-    Rgba() = default;
-    Rgba(uint8_t r, uint8_t g, uint8_t b, double o) :
-    Rgb(r, g, b), opacity(o) {}
-    Rgba(const Rgba& other) : 
-    Rgb(other.red, other.green, other.blue), opacity(other.opacity) {}
+    Rgba();
+    Rgba(uint8_t r, uint8_t g, uint8_t b, double o);
+    Rgba(const Rgba& other);
 
-    Rgba& operator =(const Rgba& other) {
-        red = other.red;
-        green = other.green;
-        blue = other.blue;
-        opacity = other.opacity;
-        return *this;
-    }
+    Rgba& operator =(const Rgba& other);
+    operator std::string() const;
 
     double opacity = 1.0;
 };
 
-using Color = std::variant<std::monostate, std::string, Rgb, Rgba>;
-
-std::ostream& operator <<(std::ostream& out, const Color& color);
 std::ostream& operator <<(std::ostream& out, const Rgb& color);
 std::ostream& operator <<(std::ostream& out, const Rgba& color);
-
-inline const Color NoneColor{"none"};
 
 enum class StrokeLineCap {
     BUTT,
@@ -78,43 +105,53 @@ enum class StrokeLineJoin {
 std::ostream& operator <<(std::ostream& o, StrokeLineCap in);
 std::ostream& operator <<(std::ostream& o, StrokeLineJoin in);
 
+using Color = std::variant<std::monostate, std::string, Rgb, Rgba>;
+inline const Color NoneColor{"none"};
+
+std::ostream& operator <<(std::ostream& out, const Color& color);
+
+inline bool IsEqualDouble(double l, double r);
+
 struct Point {
-    Point() = default;
-    Point(double x, double y)
-        : x(x)
-        , y(y) {
-    }
+    Point();
+    Point(double x, double y);
     double x = 0;
     double y = 0;
 };
 
-struct RenderProperties {
-    RenderProperties(std::ostream& out)
-        : out(out) {
-    }
+struct RenderContext {
+    using OstreamRef = std::reference_wrapper<std::ostream>;
+    using StringRef = std::reference_wrapper<std::string>;
+    using OutVar = std::variant<OstreamRef, StringRef>;
 
-    RenderProperties(std::ostream& out, int indent_step, int indent = 0)
-        : out(out)
-        , indent_step(indent_step)
-        , indent(indent) {
-    }
+    RenderContext(const OutVar& out);
+    RenderContext(const OutVar& out, int indent_step, int indent = 0);
+    RenderContext Indented() const;
+    void RenderIndent() const; 
 
-    RenderProperties Indented() const {
-        return {out, indent_step, indent + indent_step};
-    }
-
-    void RenderIndent() const {
-        for (int i = 0; i < indent; ++i) {
-            out.put(' ');
+    template <class T>
+    RenderContext& operator <<(const T& value)
+    requires ToOstream<T> && (StringConvertible<T> || std::is_enum_v<T>) {
+        if (std::holds_alternative<OstreamRef>(value_)) {
+            get<OstreamRef>(value_).get() << value;
         }
-    }
+        else if (std::holds_alternative<StringRef>(value_)) {
+            get<StringRef>(value_).get() += ToStringGeneric(value);
+        }
 
-    std::ostream& out;
+        return *this;
+    };
+
+    std::size_t index() const { return value_.index(); }
+
+private:
+    OutVar value_;
+    // std::stringstream converter_;
     int indent_step = 0;
     int indent = 0; 
 };
 
-template <typename ValueType>
+template <ToOstream ValueType>
 struct AttributeValue {
     AttributeValue(const std::string& attr_name, const ValueType& val) :
     attribute_name_(attr_name), value_(val) {}
@@ -123,25 +160,25 @@ struct AttributeValue {
     ValueType value_;
 };
 
-template <typename ValueType>
-void WriteAttribute(std::ostream& out, const AttributeValue<ValueType>& attr_val, bool is_valid) {
-    if (is_valid) {
-        out << ' ' << attr_val.attribute_name_ << "=\"" << attr_val.value_ << '\"';
-    }
-} 
+template <ToOstream ValueType>
+void WriteAttribute(RenderContext& ctx, const AttributeValue<ValueType>& attr_val) {
+    ctx << ' ' << attr_val.attribute_name_ << "=\"" << attr_val.value_ << '\"';
+};
 
-template <typename ValueType>
-void WriteAttribute(std::ostream& out, const AttributeValue<ValueType>& attr_val) {
-    out << ' ' << attr_val.attribute_name_ << "=\"" << attr_val.value_ << '\"';
-}
+template <ToOstream ValueType>
+void WriteAttribute(RenderContext& ctx, const AttributeValue<ValueType>& attr_val, bool is_valid) {
+    if (is_valid) {
+        WriteAttribute(ctx, attr_val);
+    }
+}; 
 
 class Object {
 public:
-    virtual void Render(const RenderProperties& context) const;
+    virtual void Render(RenderContext& context) const;
     virtual ~Object() = default;
 
 private:
-    virtual void RenderObject(const RenderProperties& context) const = 0;
+    virtual void RenderObject(RenderContext& context) const = 0;
 };
 
 template<typename Owner>
@@ -153,9 +190,9 @@ public:
     Owner& SetStrokeLineCap(StrokeLineCap line_cap) {line_cap_ = line_cap; return AsOwner();}
     Owner& SetStrokeLineJoin(StrokeLineJoin line_join) {line_join_ = line_join; return AsOwner();}
 protected:
-    void WriteBasicAttrs(std::ostream& out) const {
-        WriteAttribute<const Color&>(out, {"fill", fill_color_}, !std::holds_alternative<std::monostate>(fill_color_));
-        WriteAttribute<const Color&>(out, {"stroke", stroke_color_}, !std::holds_alternative<std::monostate>(stroke_color_));
+    void WriteBasicAttrs(RenderContext& out) const {
+        WriteAttribute<const Color&>(out, {"fill", fill_color_}, !holds_alternative<std::monostate>(fill_color_));
+        WriteAttribute<const Color&>(out, {"stroke", stroke_color_}, !holds_alternative<std::monostate>(stroke_color_));
         WriteAttribute<double>(out, {"stroke-width", stroke_width_}, !IsEqualDouble(stroke_width_, 0.0));
         WriteAttribute<StrokeLineCap> (out, {"stroke-linecap", line_cap_}, line_cap_ != StrokeLineCap::NONE);
         WriteAttribute<StrokeLineJoin> (out, {"stroke-linejoin", line_join_}, line_join_ != StrokeLineJoin::NONE);
@@ -181,7 +218,7 @@ public:
     Circle& SetRadius(double radius);
 
 private:
-    void RenderObject(const RenderProperties& context) const override;
+    void RenderObject(RenderContext& context) const override;
 
     Point center_;
     double radius_ = 1.0;
@@ -191,10 +228,11 @@ private:
 class Polyline final : public Object, public ObjectProperties<Polyline> {
 public:
     Polyline() = default;
+    Polyline(const Polyline& other) = default;
     Polyline& AddPoint(Point point);
 
 private:
-    void RenderObject(const RenderProperties& ctx) const override;
+    void RenderObject(RenderContext& ctx) const override;
 
     std::vector<Point> points_;
 };
@@ -211,7 +249,7 @@ public:
     Text& SetData(const std::string& data);
 
 private:
-    void RenderObject(const RenderProperties& ctx) const override;
+    void RenderObject(RenderContext& ctx) const override;
 
     Point position_;
     Point offset_;
@@ -220,6 +258,7 @@ private:
     std::string font_weight_;
     std::string data_;
 };
+
 
 class ObjectContainer {
 public:
@@ -237,8 +276,23 @@ public:
     void AddObjectPtr(std::unique_ptr<Object>&& obj_ptr) override;
 
     void Render(std::ostream& out) const;
+    void Render(std::string& str) const;
 
 private:
+    template<class T>
+    void RenderObjects(T& out) const 
+    requires std::derived_from<T, std::ostream> || std::is_convertible_v<T, std::string> {
+        RenderContext props(out, 1, 2);
+        props << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"s;
+        props << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n"s;
+
+        for(auto& object_ptr : objects_ptrs_) {
+            object_ptr->Render(props);
+        }
+
+        props << "</svg>"s;
+    }   
+
     std::vector<std::unique_ptr<Object>> objects_ptrs_;
 };
 

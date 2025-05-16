@@ -53,8 +53,13 @@ struct PtrsComparator {
 using BusPtrsSet = std::set<const Bus*, PtrsComparator<Bus>>;
 
 struct RouteStatistics {
-	int route_length_ = 0;
+    RouteStatistics() = default;
+    RouteStatistics(double route_length, int stops_count, int unique_stops_count, double curvature) :
+    stops_count_(stops_count), unique_stops_count_(unique_stops_count), route_length_(route_length),
+    curvature_(curvature) {}
+
 	int stops_count_ = 0; 
 	int unique_stops_count_ = 0;
+    double route_length_ = 0.0;
 	double curvature_ = 0.0;
 };

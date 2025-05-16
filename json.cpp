@@ -1,4 +1,6 @@
 #include "json.h"
+#include <limits>
+#include <sstream>
 
 using namespace std;
 
@@ -161,72 +163,6 @@ namespace {
     
         return Node(stod(number_str));
     }
-
-    // Node LoadDigit(std::istream& input) {
-    //     std::string parsed_num;
-    
-    //     // Считывает в parsed_num очередной символ из input
-    //     auto read_char = [&parsed_num, &input] {
-    //         parsed_num += static_cast<char>(input.get());
-    //         if (!input) {
-    //             throw ParsingError("Failed to read number from stream"s);
-    //         }
-    //     };
-    
-    //     // Считывает одну или более цифр в parsed_num из input
-    //     auto read_digits = [&input, read_char] {
-    //         if (!std::isdigit(input.peek())) {
-    //             throw ParsingError("A digit is expected"s);
-    //         }
-    //         while (std::isdigit(input.peek())) {
-    //             read_char();
-    //         }
-    //     };
-    
-    //     if (input.peek() == '-') {
-    //         read_char();
-    //     }
-    //     // Парсим целую часть числа
-    //     if (input.peek() == '0') {
-    //         read_char();
-    //         // После 0 в JSON не могут идти другие цифры
-    //     } else {
-    //         read_digits();
-    //     }
-    
-    //     bool is_int = true;
-    //     // Парсим дробную часть числа
-    //     if (input.peek() == '.') {
-    //         read_char();
-    //         read_digits();
-    //         is_int = false;
-    //     }
-    
-    //     // Парсим экспоненциальную часть числа
-    //     if (int ch = input.peek(); ch == 'e' || ch == 'E') {
-    //         read_char();
-    //         if (ch = input.peek(); ch == '+' || ch == '-') {
-    //             read_char();
-    //         }
-    //         read_digits();
-    //         is_int = false;
-    //     }
-    
-    //     try {
-    //         if (is_int) {
-    //             // Сначала пробуем преобразовать строку в int
-    //             try {
-    //                 return std::stoi(parsed_num);
-    //             } catch (...) {
-    //                 // В случае неудачи, например, при переполнении
-    //                 // код ниже попробует преобразовать строку в double
-    //             }
-    //         }
-    //         return std::stod(parsed_num);
-    //     } catch (...) {
-    //         throw ParsingError("Failed to convert "s + parsed_num + " to number"s);
-    //     }
-    // }
     
     Node LoadBool(istream& input) {
         std::boolalpha(input);
@@ -292,7 +228,7 @@ namespace {
         visit(NodePrinter(out, nested), node.GetValue());
     }
     
-}  // namespace
+}
 
 NodePrinter::NodePrinter(ostream& o, int nested) : out(o), nested_(nested) {}
 
@@ -542,6 +478,17 @@ const JsonValue& Node::GetValue() const {
 }
 
 bool Node::operator==(const Node& node) const {
+    if (IsPureDouble()) {
+        string l, r;
+        stringstream stream;
+        stream << AsDouble();
+        stream >> l;
+        stream.clear();
+        stream << node.AsDouble();
+        stream >> r;
+        return l == r;
+    }
+
     return value_ == node.value_;
 }
 

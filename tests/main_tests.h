@@ -34,6 +34,9 @@ const fs::path OUT_FILE_JSON_5 = "json_testCase_5_output.json";
 const fs::path IN_FILE_JSON_6 = "json_testCase_6_input.json";
 const fs::path OUT_FILE_JSON_6 = "json_testCase_6_output.json";
 
+const fs::path SVG_FILE_RESULT_JSON_1 = "svg_testCase_01.json";
+const fs::path SVG_FILE_RESULT_SVG_1 = "svg_testCase_01.svg";
+
 const fs::path IN_FILE_RENDER_2 = "render_testCase_2_input.json";
 const fs::path OUT_FILE_RENDER_2 = "render_testCase_2_output.xml";
 const fs::path IN_FILE_RENDER_3 = "render_testCase_3_input.json";
@@ -53,6 +56,12 @@ const fs::path OUT_FILE_RENDER_9 = "render_testCase_9_output.xml";
 
 const fs::path IN_FILE_MAP_DEF = "map_testCase_default_input.json";
 const fs::path OUT_FILE_MAP_DEF = "map_testCase_default_output.json";
+const fs::path IN_FILE_MAP_1 = "map_testCase_1_input.json";
+const fs::path OUT_FILE_MAP_1 = "map_testCase_1_output.json";
+const fs::path IN_FILE_MAP_2 = "map_testCase_2_input.json";
+const fs::path OUT_FILE_MAP_2 = "map_testCase_2_output.json";
+const fs::path IN_FILE_MAP_3 = "map_testCase_3_input.json";
+const fs::path OUT_FILE_MAP_3 = "map_testCase_3_output.json";
 
 void CompareStrings(const std::string& input, const std::string& comparator, 
 	std::ostream& your_out = std::cout, std::ostream& compare_out = std::cout);
@@ -88,5 +97,7 @@ std::vector<std::string> VecPtrToVecNames(container stops_ptr) {
     }
     return vec;
 };
+
+std::string ReadFStream(std::ifstream& in);
 
 #endif

@@ -10,8 +10,8 @@
 
 using namespace std;
 
-void ReadAndWriteRequest(istream& in, ostream& out) {
-    json::Document parsed_doc = json::Load(in);
+void ReadAndWriteRequest(istream& input, ostream& out) {
+    json::Document parsed_doc = json::Load(input);
 
     RequestHander handler;
     JsonReader reader;
@@ -20,7 +20,15 @@ void ReadAndWriteRequest(istream& in, ostream& out) {
 
     TransportCatalogue transfport_catalogue;
     handler.ProvideInputRequests(transfport_catalogue);
-    auto stats = handler.GetStats(transfport_catalogue);
+    
+    MapRenderer::RouteMap route_map;
+    reader.ReadRenderSettingsJson(parsed_doc, route_map);
+    for (auto& bus_ptr : transfport_catalogue.GetAllBuses()) {
+        route_map.AddRoute(bus_ptr);
+    }
+    route_map.ReorderRouteColors();
+    
+    auto stats = handler.GetStats(transfport_catalogue, route_map);
     json::Document out_doc = reader.BuildStatJsonOutput(stats);
 
     json::PrintNode(out_doc, out);
@@ -54,7 +62,7 @@ int main() {
     // ofstream file("H:\\Programming\\Training_projects\\Transport_Catalogue\\render_testCase_1_output_user.xml");
     // ReadAndRenderMap(in, file);
     // file.close();
-    ReadAndRenderMap(cin, cout);
+    ReadAndWriteRequest(cin, cout);
     return 0;
 }
 

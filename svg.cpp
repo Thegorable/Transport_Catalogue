@@ -8,6 +8,8 @@ namespace svg {
 
 using namespace std;
 
+FloatConverter<double> float_converter;
+
 ostream& operator <<(ostream& out, const Color& color) {
     if (holds_alternative<monostate>(color)) {
         out << NoneColor;
@@ -18,6 +20,11 @@ ostream& operator <<(ostream& out, const Color& color) {
     return out;
 }
 
+template <>
+std::string ToStringGeneric(const double& val) {
+    return float_converter(val);
+}
+
 ostream &operator<<(ostream &out, const Rgb &color) {
     out << "rgb(" << unsigned(color.red) << ',' << unsigned(color.green) << ',' << unsigned(color.blue) << ')';
     return out;
@@ -26,6 +33,10 @@ ostream &operator<<(ostream &out, const Rgb &color) {
 ostream &operator<<(ostream &out, const Rgba &color) {
     out << "rgba(" << unsigned(color.red) << ',' << unsigned(color.green) << ',' << unsigned(color.blue) << ',' << color.opacity << ')';
     return out;
+}
+
+bool IsEqualDouble(double l, double r) {
+    return std::abs(l - r) < std::numeric_limits<double>::epsilon();
 }
 
 ostream &operator<<(ostream &o, StrokeLineCap in) {
@@ -75,10 +86,10 @@ ostream& operator <<(ostream& o, StrokeLineJoin in) {
     return o;
 }
 
-void Object::Render(const RenderProperties& context) const {
+void Object::Render(RenderContext& context) const {
     context.RenderIndent();
     RenderObject(context);
-    context.out << std::endl;
+    context << '\n';
 }
 
 Circle& Circle::SetCenter(Point center)  {
@@ -91,14 +102,13 @@ Circle& Circle::SetRadius(double radius)  {
     return *this;
 }
 
-void Circle::RenderObject(const RenderProperties& context) const {
-    auto& out = context.out;
-    out << "<circle";
-    WriteAttribute<double>(out, {"cx", center_.x});
-    WriteAttribute<double>(out, {"cy", center_.y});
-    WriteAttribute<double>(out, {"r", radius_});
-    WriteBasicAttrs(out);
-    out << "/>"sv;
+void Circle::RenderObject(RenderContext& context) const {
+    context << "<circle";
+    WriteAttribute<double>(context, {"cx", center_.x});
+    WriteAttribute<double>(context, {"cy", center_.y});
+    WriteAttribute<double>(context, {"r", radius_});
+    WriteBasicAttrs(context);
+    context << "/>"s;
 }
 
 Polyline& Polyline::AddPoint(Point p) {
@@ -106,9 +116,8 @@ Polyline& Polyline::AddPoint(Point p) {
     return *this;
 }
 
-void Polyline::RenderObject(const RenderProperties& ctx) const {
-    auto& out = ctx.out;
-    out << "<polyline";
+void Polyline::RenderObject(RenderContext& ctx) const {
+    ctx << "<polyline";
     stringstream points_value;
 
     if (!points_.empty()) {
@@ -118,10 +127,10 @@ void Polyline::RenderObject(const RenderProperties& ctx) const {
             points_value << ' ' << it->x << ',' << it->y;
         }
     }
-    WriteAttribute<const string&>(out, {"points", points_value.str()});
-    WriteBasicAttrs(out);
+    WriteAttribute<const string&>(ctx, {"points", points_value.str()});
+    WriteBasicAttrs(ctx);
 
-    out << "/>";
+    ctx << "/>";
 
 }
 
@@ -155,18 +164,17 @@ Text& Text::SetData(const string& data) {
     return *this;
 }
 
-void Text::RenderObject(const RenderProperties& ctx) const {
-    auto& out = ctx.out;
-    out << "<text";
-    WriteBasicAttrs(out);
-    WriteAttribute<double>(out, {"x"s, position_.x});
-    WriteAttribute<double>(out, {"y"s, position_.y});
-    WriteAttribute<double>(out, {"dx"s, offset_.x});
-    WriteAttribute<double>(out, {"dy"s, offset_.y});
-    WriteAttribute<uint32_t>(out, {"font-size"s, font_size_});
-    WriteAttribute<const string&>(out, {"font-family"s, font_family_}, !font_family_.empty());
-    WriteAttribute<const string&>(out, {"font-weight"s, font_weight_}, !font_weight_.empty());
-    out << '>' << data_ << "</text>";
+void Text::RenderObject(RenderContext& ctx) const {
+    ctx << "<text";
+    WriteBasicAttrs(ctx);
+    WriteAttribute<double>(ctx, {"x"s, position_.x});
+    WriteAttribute<double>(ctx, {"y"s, position_.y});
+    WriteAttribute<double>(ctx, {"dx"s, offset_.x});
+    WriteAttribute<double>(ctx, {"dy"s, offset_.y});
+    WriteAttribute<uint32_t>(ctx, {"font-size"s, font_size_});
+    WriteAttribute<const string&>(ctx, {"font-family"s, font_family_}, !font_family_.empty());
+    WriteAttribute<const string&>(ctx, {"font-weight"s, font_weight_}, !font_weight_.empty());
+    ctx << '>' << data_ << "</text>";
 }
 
 void Document::AddObjectPtr(std::unique_ptr<Object>&& obj_ptr) {
@@ -174,22 +182,11 @@ void Document::AddObjectPtr(std::unique_ptr<Object>&& obj_ptr) {
 }
 
 void Document::Render(ostream& out) const {
-    out << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"sv << std::endl;
-    out << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">"sv << std::endl;
-    
-    RenderProperties ctx(out, 1, 2);
-    for(auto& object_ptr : objects_ptrs_) {
-        object_ptr->Render(ctx);
-    }
-
-    out << "</svg>"sv;
+    RenderObjects<ostream>(out);
 }
 
-void Document::Render(std::string &str) const {
-    str += "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\\n"s +
-    "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\\n"s;
-
-    str += "</svg>\\n"s;
+void Document::Render(string& out) const {
+    RenderObjects<string>(out);
 }
 
 Polyline CreateStar(Point center, double outer_rad, double inner_rad, int num_rays) {
@@ -205,6 +202,174 @@ Polyline CreateStar(Point center, double outer_rad, double inner_rad, int num_ra
         polyline.AddPoint({center.x + inner_rad * sin(angle), center.y - inner_rad * cos(angle)});
     }
     return polyline;
+};
+
+Rgb::Rgb() = default;
+Rgb::Rgb(uint8_t r, uint8_t g, uint8_t b) :
+red(r), green(g), blue(b) {}
+Rgb::Rgb(const Rgb& other) : 
+red(other.red), green(other.green), blue(other.blue) {}
+
+Rgb& Rgb::operator =(const Rgb& other) {
+    red = other.red;
+    green = other.green;
+    blue = other.blue;
+    return *this;
+}
+
+Rgb::operator std::string() const {
+    return "rgb("s + ToStringGeneric(red) + ',' + ToStringGeneric(green) + 
+    ',' + ToStringGeneric(blue) + ')';
+}
+
+Rgba::Rgba() = default;
+Rgba::Rgba(uint8_t r, uint8_t g, uint8_t b, double o) :
+Rgba::Rgb(r, g, b), opacity(o) {}
+Rgba::Rgba(const Rgba& other) : 
+Rgba::Rgb(other.red, other.green, other.blue), opacity(other.opacity) {}
+
+Rgba& Rgba::operator =(const Rgba& other) {
+    red = other.red;
+    green = other.green;
+    blue = other.blue;
+    opacity = other.opacity;
+    return *this;
+}
+
+Rgba::operator std::string() const {
+    return "rgba("s + ToStringGeneric(red) + ',' + ToStringGeneric(green) + 
+    ',' + ToStringGeneric(blue) + ',' + 
+    ToStringGeneric(opacity) + ')';
+}
+
+Point::Point() = default;
+Point::Point(double x, double y)
+    : x(x)
+    , y(y) {
+}
+
+RenderContext::RenderContext(const OutVar& out)
+    : value_(out) {
+}
+
+RenderContext::RenderContext(const OutVar& out, int indent_step, int indent)
+    : value_(out)
+    , indent_step(indent_step)
+    , indent(indent) {
+}
+
+RenderContext RenderContext::Indented() const {
+    return {value_, indent_step, indent + indent_step};
+}
+
+void RenderContext::RenderIndent() const {
+    if (std::holds_alternative<OstreamRef>(value_)) {
+        auto& stream = get<OstreamRef>(value_).get();
+        for (int i = 0; i < indent; ++i) {
+            stream.put(' ');
+        }
+    }
+    else if (std::holds_alternative<StringRef>(value_)) {
+        get<StringRef>(value_).get() += std::string(indent, ' ');
+    }
+}
+
+template <>
+RenderContext& RenderContext::operator <<(const double& value)  {
+    if (std::holds_alternative<OstreamRef>(value_)) {
+        get<OstreamRef>(value_).get() << value;
+    }
+    else if (std::holds_alternative<StringRef>(value_)) {
+        get<StringRef>(value_).get() += float_converter(value);
+    }
+
+    return *this;
+}
+
+template<>
+std::string ToStringGeneric<Rgb>(const Rgb& val) { return val; }
+template<>
+std::string ToStringGeneric<Rgba>(const Rgba& val) { return val; }
+
+struct ColorVisitor {
+    std::string operator ()(std::monostate) {
+        return "none"s;
+    }
+
+    std::string operator ()(const Rgb &color) {
+        return color;
+    }
+
+    std::string operator ()(const Rgba &color) {
+        return color;
+    }
+
+    std::string operator ()(const std::string &color) {
+        return color;
+    }
+};
+
+template <>
+std::string ToStringGeneric(const Color &color) {
+    return std::visit(ColorVisitor{}, color);
+}
+
+template <>
+std::string ToStringGeneric(const char& sym) {
+    return std::string(1, sym);
+}
+
+template <>
+std::string ToStringGeneric(const StrokeLineCap &val) {
+    switch (val)
+    {
+    case StrokeLineCap::BUTT:
+        return "butt";
+        break;
+
+    case StrokeLineCap::ROUND:
+        return "round";
+        break;
+
+    case StrokeLineCap::SQUARE:
+        return "square";
+        break;
+
+    case StrokeLineCap::NONE:
+        return "none";
+        break;
+    }
+    
+    throw std::logic_error("The StrokeLineCap conversion to string was unsuccessful"s);
+    return {};
+}
+
+template <>
+std::string ToStringGeneric(const StrokeLineJoin &val) {
+    switch (val)
+    {
+    case StrokeLineJoin::ARCS:
+        return "arcs"s;
+        break;
+    case StrokeLineJoin::BEVEL:
+        return "bevel"s;
+        break;
+    case StrokeLineJoin::MITER:
+        return "miter"s;
+        break;
+    case StrokeLineJoin::MITER_CLIP:
+        return "miter-clip"s;
+        break;
+    case StrokeLineJoin::ROUND:
+        return "round"s;
+        break;
+    case StrokeLineJoin::NONE:
+        return "none";
+        break;
+    }
+    
+    throw std::logic_error("The StrokeLineJoin conversion to string was unsuccessful"s);
+    return {};
 }
 
 }

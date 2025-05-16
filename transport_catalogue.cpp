@@ -56,9 +56,9 @@ optional<RouteStatistics> TransportCatalogue::GetRouteStatistics(string_view bus
 
     const vector<Stop*>& route = it->second->route_;
     unordered_set<Stop*> unique_stops_(route.begin(), route.end());
-    uint32_t real_distance = GetRealRouteLength(bus);
+    double real_distance = GetRealRouteLength(bus);
 
-    return optional(RouteStatistics{static_cast<int>(real_distance),
+    return optional(RouteStatistics{(real_distance),
                                     static_cast<int>(route.size()), 
                                     static_cast<int>(unique_stops_.size()),
                                     static_cast<double> (real_distance / GetRouteLength(bus)) });
@@ -112,10 +112,10 @@ double TransportCatalogue::GetRouteLength(string_view bus) const {
     return sum;
 }
 
-uint32_t TransportCatalogue::GetRealRouteLength(std::string_view bus) const {
+double TransportCatalogue::GetRealRouteLength(std::string_view bus) const {
     const Bus* bus_ptr = buses_ptrs_.at(bus);
     const vector<Stop*>& stops = bus_ptr->route_;
-    uint32_t total_distance = 0;
+    double total_distance = 0;
 
     for (int i = 0; i < static_cast<int>(stops.size()) - 1; i++) {
         const auto& curr_stop = stops[i];

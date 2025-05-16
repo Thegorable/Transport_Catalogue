@@ -32,7 +32,7 @@ protected:
 	std::unordered_map<std::string_view, BusPtrsSet> stops_routes_ptrs_;
 
 	double GetRouteLength(std::string_view bus) const;
-	uint32_t GetRealRouteLength(std::string_view bus) const;
+	double GetRealRouteLength(std::string_view bus) const;
 
 	Stop empty_stop_;
 };

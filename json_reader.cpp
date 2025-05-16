@@ -44,7 +44,11 @@ void JsonReader::ReadStatJsonRequests(const json::Document& doc, RequestHander& 
     for (const auto& stat_request : result) {
         Stat request_format;
         request_format.id_ = stat_request.AsMap().at("id"s).AsInt();
-        request_format.name_ = stat_request.AsMap().at("name"s).AsString();
+
+        auto name_it = stat_request.AsMap().find("name"s);
+        if (name_it != stat_request.AsMap().end()) {
+            request_format.name_ = name_it->second.AsString();
+        }
 
         auto& type_request = stat_request.AsMap().at("type"s).AsString();
         
@@ -56,7 +60,7 @@ void JsonReader::ReadStatJsonRequests(const json::Document& doc, RequestHander& 
             request_format.type_ = RequestType::Bus;
         }
 
-        else if (type_request == "Bus"s) {
+        else if (type_request == "Map"s) {
             request_format.type_ = RequestType::Map;
         }
 
@@ -127,8 +131,11 @@ json::Document JsonReader::BuildStatJsonOutput(const std::vector<std::shared_ptr
             if (ptr_stat == nullptr) {
                 throw logic_error("Dynamic cust to StatMap is failed"s);
             }
-            auto& map_drawn = ptr_stat->map_;
-            stat["map"] = "str"s;
+            string svg_map;
+            ptr_stat->map_.Render(svg_map);
+            stat["map"] = move(svg_map);
+            arr.push_back(move(stat));
+            break;
         }
 
         case RequestType::Error: {

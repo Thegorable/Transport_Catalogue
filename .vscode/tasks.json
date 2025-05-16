@@ -23,6 +23,7 @@
                 "C:/dev/libs/simpletest/simpletest.cpp",
                 "H:\\Programming\\Training_projects\\Transport_Catalogue\\tests\\main_tests.cpp",
                 "H:\\Programming\\Training_projects\\Transport_Catalogue\\tests\\json_tests.cpp",
+                "H:\\Programming\\Training_projects\\Transport_Catalogue\\tests\\svg_tests.cpp",
                 "-I",
                 "C:/dev/libs/simpletest",
                 "-o",
