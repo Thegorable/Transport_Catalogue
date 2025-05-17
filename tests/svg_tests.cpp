@@ -2,6 +2,7 @@
 #ifdef DEBUG
 
 #include "../svg.h"
+#include "../json.h"
 
 #include <sstream>
 #include <fstream>
@@ -33,15 +34,6 @@ DEFINE_TEST_G( WriteToOstream, SVG_Document_Testring) {
         ostringstream streem_result;
         doc.Render(streem_result);
         string text_result = streem_result.str();
-
-        TEST(result_test == text_result);
-    }
-
-    {
-        ifstream stream(TESTS_PATH / SVG_FILE_RESULT_JSON_1);
-        string result_test = ReadFStream(stream);
-        string text_result;
-        doc.Render(text_result);
 
         TEST(result_test == text_result);
     }

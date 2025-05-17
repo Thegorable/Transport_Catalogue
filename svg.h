@@ -19,53 +19,12 @@ concept ToOstream = requires(std::ostream& out, T value) {
     out << value;
 };
 
-template<class T>
-concept ToString = requires(T value) {
-    std::to_string(value);
-};
-
-template<class T>
-concept StringConvertible = ToString<T> ||
-std::is_convertible<T, std::string>::value ||
-std::constructible_from<T, std::string> ||
-std::same_as<T, char>;
-
-template <std::floating_point T>
-class FloatConverter {
-public:
-    FloatConverter() = default;
-
-    std::string operator () (T value) {
-        std::string result;
-        converter_ << value;
-        converter_ >> result;
-        converter_.clear();
-        return result;
-    }
-
-private:
-    std::stringstream converter_;
-};
-
-template <class T>
-std::string ToStringGeneric(const T& val) {
-    if constexpr (std::is_convertible_v<T, std::string>) {
-        return val;
-    }
-    if constexpr (ToString<T>) {
-        return std::to_string(val);
-    }
-    
-    throw std::logic_error("ToStringGeneric was unsuccessful"s);
-};
-
 struct Rgb {
     Rgb();
     Rgb(uint8_t r, uint8_t g, uint8_t b);
     Rgb(const Rgb& other);
 
     Rgb& operator =(const Rgb& other);
-    operator std::string() const;
 
     uint8_t red = 0;
     uint8_t green = 0;
@@ -78,7 +37,6 @@ struct Rgba : public Rgb {
     Rgba(const Rgba& other);
 
     Rgba& operator =(const Rgba& other);
-    operator std::string() const;
 
     double opacity = 1.0;
 };
@@ -120,33 +78,19 @@ struct Point {
 };
 
 struct RenderContext {
-    using OstreamRef = std::reference_wrapper<std::ostream>;
-    using StringRef = std::reference_wrapper<std::string>;
-    using OutVar = std::variant<OstreamRef, StringRef>;
-
-    RenderContext(const OutVar& out);
-    RenderContext(const OutVar& out, int indent_step, int indent = 0);
+    RenderContext(std::ostream& out);
+    RenderContext(std::ostream& out, int indent_step, int indent = 0);
     RenderContext Indented() const;
     void RenderIndent() const; 
 
-    template <class T>
-    RenderContext& operator <<(const T& value)
-    requires ToOstream<T> && (StringConvertible<T> || std::is_enum_v<T>) {
-        if (std::holds_alternative<OstreamRef>(value_)) {
-            get<OstreamRef>(value_).get() << value;
-        }
-        else if (std::holds_alternative<StringRef>(value_)) {
-            get<StringRef>(value_).get() += ToStringGeneric(value);
-        }
-
+    template <ToOstream T>
+    RenderContext& operator <<(const T& value) {
+        value_ << value;
         return *this;
     };
 
-    std::size_t index() const { return value_.index(); }
-
 private:
-    OutVar value_;
-    // std::stringstream converter_;
+    std::ostream& value_;
     int indent_step = 0;
     int indent = 0; 
 };
@@ -274,25 +218,9 @@ public:
 class Document : public ObjectContainer {
 public:
     void AddObjectPtr(std::unique_ptr<Object>&& obj_ptr) override;
-
     void Render(std::ostream& out) const;
-    void Render(std::string& str) const;
 
 private:
-    template<class T>
-    void RenderObjects(T& out) const 
-    requires std::derived_from<T, std::ostream> || std::is_convertible_v<T, std::string> {
-        RenderContext props(out, 1, 2);
-        props << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"s;
-        props << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n"s;
-
-        for(auto& object_ptr : objects_ptrs_) {
-            object_ptr->Render(props);
-        }
-
-        props << "</svg>"s;
-    }   
-
     std::vector<std::unique_ptr<Object>> objects_ptrs_;
 };
 

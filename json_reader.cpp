@@ -131,8 +131,11 @@ json::Document JsonReader::BuildStatJsonOutput(const std::vector<std::shared_ptr
             if (ptr_stat == nullptr) {
                 throw logic_error("Dynamic cust to StatMap is failed"s);
             }
-            string svg_map;
-            ptr_stat->map_.Render(svg_map);
+            
+            stringstream stream_str;
+            ptr_stat->map_.Render(stream_str);
+            string svg_map(stream_str.str());
+
             stat["map"] = move(svg_map);
             arr.push_back(move(stat));
             break;

@@ -1,6 +1,11 @@
 #define DEBUG
+// #define BENCHMARK
 
-#ifdef DEBUG
+#if !defined(DEBUG) && !defined(BENCHMARK)
+#define RELEASE
+#endif
+
+#if defined(DEBUG) || defined(BENCHMARK)
 
 #pragma once
 #include "../input_reader.h"
@@ -36,6 +41,8 @@ const fs::path OUT_FILE_JSON_6 = "json_testCase_6_output.json";
 
 const fs::path SVG_FILE_RESULT_JSON_1 = "svg_testCase_01.json";
 const fs::path SVG_FILE_RESULT_SVG_1 = "svg_testCase_01.svg";
+const fs::path SVG_FILE_DOUBLE_INPUT = "svg_DoubleRGBA_test_input.txt";
+const fs::path SVG_FILE_DOUBLE_RESULT = "svg_DoubleRGBA_test_result.txt";
 
 const fs::path IN_FILE_RENDER_2 = "render_testCase_2_input.json";
 const fs::path OUT_FILE_RENDER_2 = "render_testCase_2_output.xml";

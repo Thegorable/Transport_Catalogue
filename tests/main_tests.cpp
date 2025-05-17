@@ -174,7 +174,7 @@ string BuildMapSvg(fs::path in, bool print_result = false, ostream& out_source =
     doc_draw.Render(output);
 
     if (print_result) {
-        out_source << "my svg:\n\n" << output.str() << "\n\n";
+        out_source << output.str();
     }
 
     return output.str();
@@ -267,47 +267,44 @@ DEFINE_TEST_G(TransportCatalogue_Render_Main, MainRenderTests) {
 }
 
 DEFINE_TEST_G(TransportCatalogue_Map_Main, Json_Map_Tests) {    
-    // {
-    //     json::Document result_doc = BuildDocRequestStat(TESTS_PATH / IN_FILE_MAP_DEF);
-    //     ifstream test_stream_in(TESTS_PATH / OUT_FILE_MAP_DEF);
-    //     json::Document test_doc = json::Load(test_stream_in);
+    {
+        json::Document result_doc = BuildDocRequestStat(TESTS_PATH / IN_FILE_MAP_DEF);
+        ifstream test_stream_in(TESTS_PATH / OUT_FILE_MAP_DEF);
+        json::Document test_doc = json::Load(test_stream_in);
 
-    //     TEST(result_doc == test_doc);
-    // }
-
-    // {
-    //     json::Document result_doc = BuildDocRequestStat(TESTS_PATH / IN_FILE_MAP_1);
-    //     ifstream test_stream_in(TESTS_PATH / OUT_FILE_MAP_1);
-    //     json::Document test_doc = json::Load(test_stream_in);
-
-    //     TEST(result_doc == test_doc);
-    // }
-
-    // {
-    //     json::Document result_doc = BuildDocRequestStat(TESTS_PATH / IN_FILE_MAP_2);
-    //     ifstream test_stream_in(TESTS_PATH / OUT_FILE_MAP_2);
-    //     json::Document test_doc = json::Load(test_stream_in);
-
-    //     TEST(result_doc == test_doc);
-    // }
-
-    // {
-    //     json::Document result_doc = BuildDocRequestStat(TESTS_PATH / IN_FILE_MAP_3);
-    //     ifstream test_stream_in(TESTS_PATH / OUT_FILE_MAP_3);
-    //     json::Document test_doc = json::Load(test_stream_in);
-
-    //     TEST(result_doc == test_doc);
-    // }
+        TEST(result_doc == test_doc);
+    }
 
     {
-        string result_doc = ExecuteRequestStat(TESTS_PATH / "DoubleRGBA_test.txt", true);
-        ofstream file_result(TESTS_PATH / "result.txt");
-        file_result << result_doc;
-        file_result.close();
+        json::Document result_doc = BuildDocRequestStat(TESTS_PATH / IN_FILE_MAP_1);
+        ifstream test_stream_in(TESTS_PATH / OUT_FILE_MAP_1);
+        json::Document test_doc = json::Load(test_stream_in);
 
-        // ifstream input(TESTS_PATH / "DoubleRGBA_test.txt");
-        // ofstream file_result(TESTS_PATH / "result.txt");
-        // RePrintJson(TESTS_PATH / "DoubleRGBA_test.txt", true, file_result);
+        TEST(result_doc == test_doc);
+    }
+
+    {
+        json::Document result_doc = BuildDocRequestStat(TESTS_PATH / IN_FILE_MAP_2);
+        ifstream test_stream_in(TESTS_PATH / OUT_FILE_MAP_2);
+        json::Document test_doc = json::Load(test_stream_in);
+
+        TEST(result_doc == test_doc);
+    }
+
+    {
+        json::Document result_doc = BuildDocRequestStat(TESTS_PATH / IN_FILE_MAP_3);
+        ifstream test_stream_in(TESTS_PATH / OUT_FILE_MAP_3);
+        json::Document test_doc = json::Load(test_stream_in);
+
+        TEST(result_doc == test_doc);
+    }
+
+    {
+        string result_test = BuildMapSvg(TESTS_PATH / SVG_FILE_DOUBLE_INPUT);
+        ifstream stream_output(TESTS_PATH / SVG_FILE_DOUBLE_RESULT);
+        string text_result = ReadFStream(stream_output);
+
+        TEST(result_test == text_result);
     }
 
 }
@@ -315,8 +312,8 @@ DEFINE_TEST_G(TransportCatalogue_Map_Main, Json_Map_Tests) {
 int main() {
     // TestFixture::ExecuteTestGroup("MainTests");
     // TestFixture::ExecuteTestGroup("MainRenderTests");
-    TestFixture::ExecuteTestGroup("Json_Map_Tests");
-    // TestFixture::ExecuteAllTests();
+    // TestFixture::ExecuteTestGroup("Json_Map_Tests");
+    TestFixture::ExecuteAllTests();
     return 0;
 }
 

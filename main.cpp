@@ -1,6 +1,6 @@
 #include "tests/main_tests.h"
 
-#ifndef DEBUG
+#ifdef RELEASE
 #include <fstream>
 #include <iostream>
 

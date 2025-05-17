@@ -8,8 +8,6 @@ namespace svg {
 
 using namespace std;
 
-FloatConverter<double> float_converter;
-
 ostream& operator <<(ostream& out, const Color& color) {
     if (holds_alternative<monostate>(color)) {
         out << NoneColor;
@@ -18,11 +16,6 @@ ostream& operator <<(ostream& out, const Color& color) {
     visit([&out] (const auto& value) {out << value; }, color);
 
     return out;
-}
-
-template <>
-std::string ToStringGeneric(const double& val) {
-    return float_converter(val);
 }
 
 ostream &operator<<(ostream &out, const Rgb &color) {
@@ -181,13 +174,17 @@ void Document::AddObjectPtr(std::unique_ptr<Object>&& obj_ptr) {
     objects_ptrs_.push_back(move(obj_ptr));
 }
 
-void Document::Render(ostream& out) const {
-    RenderObjects<ostream>(out);
-}
+void Document::Render(std::ostream& out) const {
+    RenderContext props(out, 1, 2);
+    props << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"s;
+    props << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n"s;
 
-void Document::Render(string& out) const {
-    RenderObjects<string>(out);
-}
+    for(auto& object_ptr : objects_ptrs_) {
+        object_ptr->Render(props);
+    }
+
+    props << "</svg>"s;
+} 
 
 Polyline CreateStar(Point center, double outer_rad, double inner_rad, int num_rays) {
     using namespace svg;
@@ -217,11 +214,6 @@ Rgb& Rgb::operator =(const Rgb& other) {
     return *this;
 }
 
-Rgb::operator std::string() const {
-    return "rgb("s + ToStringGeneric(red) + ',' + ToStringGeneric(green) + 
-    ',' + ToStringGeneric(blue) + ')';
-}
-
 Rgba::Rgba() = default;
 Rgba::Rgba(uint8_t r, uint8_t g, uint8_t b, double o) :
 Rgba::Rgb(r, g, b), opacity(o) {}
@@ -236,23 +228,17 @@ Rgba& Rgba::operator =(const Rgba& other) {
     return *this;
 }
 
-Rgba::operator std::string() const {
-    return "rgba("s + ToStringGeneric(red) + ',' + ToStringGeneric(green) + 
-    ',' + ToStringGeneric(blue) + ',' + 
-    ToStringGeneric(opacity) + ')';
-}
-
 Point::Point() = default;
 Point::Point(double x, double y)
     : x(x)
     , y(y) {
 }
 
-RenderContext::RenderContext(const OutVar& out)
+RenderContext::RenderContext(ostream& out)
     : value_(out) {
 }
 
-RenderContext::RenderContext(const OutVar& out, int indent_step, int indent)
+RenderContext::RenderContext(ostream& out, int indent_step, int indent)
     : value_(out)
     , indent_step(indent_step)
     , indent(indent) {
@@ -263,113 +249,9 @@ RenderContext RenderContext::Indented() const {
 }
 
 void RenderContext::RenderIndent() const {
-    if (std::holds_alternative<OstreamRef>(value_)) {
-        auto& stream = get<OstreamRef>(value_).get();
-        for (int i = 0; i < indent; ++i) {
-            stream.put(' ');
-        }
+    for (int i = 0; i < indent; ++i) {
+        value_.put(' ');
     }
-    else if (std::holds_alternative<StringRef>(value_)) {
-        get<StringRef>(value_).get() += std::string(indent, ' ');
-    }
-}
-
-template <>
-RenderContext& RenderContext::operator <<(const double& value)  {
-    if (std::holds_alternative<OstreamRef>(value_)) {
-        get<OstreamRef>(value_).get() << value;
-    }
-    else if (std::holds_alternative<StringRef>(value_)) {
-        get<StringRef>(value_).get() += float_converter(value);
-    }
-
-    return *this;
-}
-
-template<>
-std::string ToStringGeneric<Rgb>(const Rgb& val) { return val; }
-template<>
-std::string ToStringGeneric<Rgba>(const Rgba& val) { return val; }
-
-struct ColorVisitor {
-    std::string operator ()(std::monostate) {
-        return "none"s;
-    }
-
-    std::string operator ()(const Rgb &color) {
-        return color;
-    }
-
-    std::string operator ()(const Rgba &color) {
-        return color;
-    }
-
-    std::string operator ()(const std::string &color) {
-        return color;
-    }
-};
-
-template <>
-std::string ToStringGeneric(const Color &color) {
-    return std::visit(ColorVisitor{}, color);
-}
-
-template <>
-std::string ToStringGeneric(const char& sym) {
-    return std::string(1, sym);
-}
-
-template <>
-std::string ToStringGeneric(const StrokeLineCap &val) {
-    switch (val)
-    {
-    case StrokeLineCap::BUTT:
-        return "butt";
-        break;
-
-    case StrokeLineCap::ROUND:
-        return "round";
-        break;
-
-    case StrokeLineCap::SQUARE:
-        return "square";
-        break;
-
-    case StrokeLineCap::NONE:
-        return "none";
-        break;
-    }
-    
-    throw std::logic_error("The StrokeLineCap conversion to string was unsuccessful"s);
-    return {};
-}
-
-template <>
-std::string ToStringGeneric(const StrokeLineJoin &val) {
-    switch (val)
-    {
-    case StrokeLineJoin::ARCS:
-        return "arcs"s;
-        break;
-    case StrokeLineJoin::BEVEL:
-        return "bevel"s;
-        break;
-    case StrokeLineJoin::MITER:
-        return "miter"s;
-        break;
-    case StrokeLineJoin::MITER_CLIP:
-        return "miter-clip"s;
-        break;
-    case StrokeLineJoin::ROUND:
-        return "round"s;
-        break;
-    case StrokeLineJoin::NONE:
-        return "none";
-        break;
-    }
-    
-    throw std::logic_error("The StrokeLineJoin conversion to string was unsuccessful"s);
-    return {};
 }
 
 }
