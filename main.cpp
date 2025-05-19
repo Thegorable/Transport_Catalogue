@@ -21,7 +21,7 @@ void ReadAndWriteRequest(istream& input, ostream& out) {
     TransportCatalogue transfport_catalogue;
     handler.ProvideInputRequests(transfport_catalogue);
     
-    MapRenderer::RouteMap route_map;
+    MapRenderer::MapRenderer route_map;
     reader.ReadRenderSettingsJson(parsed_doc, route_map);
     for (auto& bus_ptr : transfport_catalogue.GetAllBuses()) {
         route_map.AddRoute(bus_ptr);
@@ -41,7 +41,7 @@ void ReadAndRenderMap(istream& in, ostream& out) {
     JsonReader reader;
     reader.ReadBaseJsonRequests(parsed_doc, handler);
 
-    MapRenderer::RouteMap route_map;
+    MapRenderer::MapRenderer route_map;
     reader.ReadRenderSettingsJson(parsed_doc, route_map);
 
     TransportCatalogue transfport_catalogue;

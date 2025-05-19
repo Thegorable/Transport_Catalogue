@@ -68,7 +68,7 @@ void JsonReader::ReadStatJsonRequests(const json::Document& doc, RequestHander& 
     }
 }
 
-void JsonReader::ReadRenderSettingsJson(const json::Document& doc, MapRenderer::RouteMap& route_map) {
+void JsonReader::ReadRenderSettingsJson(const json::Document& doc, map_renderer::MapRenderer& route_map) {
     const json::Dict& settings = doc.GetRoot().AsMap().at("render_settings"s).AsMap();
 
     route_map.SetMapSize({settings.at("width").AsDouble(), settings.at("height").AsDouble()}).

@@ -69,7 +69,7 @@ void BenchmarkBuildingSvgJson() {
     profiler.PrintResults<chrono::microseconds>("ProvideInputRequests: ");
 
     vector<shared_ptr<Stat>> stats;
-    MapRenderer::RouteMap route_map;
+    MapRenderer::MapRenderer route_map;
     profiler.Restart();
     reader.ReadRenderSettingsJson(parsed_doc, route_map);
     profiler.PrintResults<chrono::microseconds>("ReadRenderSettingsJson: ");

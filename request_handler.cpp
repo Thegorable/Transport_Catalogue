@@ -82,7 +82,7 @@ void RequestHander::ProvideInputRequests(TransportCatalogue &transport_c) {
 }
 
 vector<shared_ptr<Stat>> RequestHander::GetStats(const TransportCatalogue &transport_c, 
-    const std::optional<MapRenderer::RouteMap>& route_map) const {
+    const std::optional<map_renderer::MapRenderer>& route_map) const {
     vector<shared_ptr<Stat>> stats;
 
     for (auto& request : stat_requests_) {
@@ -134,7 +134,7 @@ void RequestHander::PushStopStat(const TransportCatalogue &transport_c,
     return;
 }
 
-void RequestHander::PushMapStat(const MapRenderer::RouteMap& route_map, 
+void RequestHander::PushMapStat(const map_renderer::MapRenderer& route_map, 
     const Stat &stat, 
     std::vector<std::shared_ptr<Stat>> &container) const {
 

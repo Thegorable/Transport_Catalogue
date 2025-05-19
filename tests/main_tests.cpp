@@ -97,7 +97,7 @@ string ExecuteRequestStat(fs::path in, bool render = true, ostream& out_source =
 
     vector<shared_ptr<Stat>> stats;
     if (render) {
-        MapRenderer::RouteMap route_map;
+        map_renderer::MapRenderer route_map;
         reader.ReadRenderSettingsJson(parsed_doc, route_map);
         for (auto& bus_ptr : transfport_catalogue.GetAllBuses()) {
             route_map.AddRoute(bus_ptr);
@@ -132,7 +132,7 @@ json::Document BuildDocRequestStat(fs::path in, bool render = true) {
     
     vector<shared_ptr<Stat>> stats;
     if (render) {
-        MapRenderer::RouteMap route_map;
+        map_renderer::MapRenderer route_map;
         reader.ReadRenderSettingsJson(parsed_doc, route_map);
         for (auto& bus_ptr : transfport_catalogue.GetAllBuses()) {
             route_map.AddRoute(bus_ptr);
@@ -156,7 +156,7 @@ string BuildMapSvg(fs::path in, bool print_result = false, ostream& out_source =
     JsonReader reader;
     reader.ReadBaseJsonRequests(parsed_doc, handler);
 
-    MapRenderer::RouteMap route_map;
+    map_renderer::MapRenderer route_map;
     reader.ReadRenderSettingsJson(parsed_doc, route_map);
 
     TransportCatalogue transfport_catalogue;

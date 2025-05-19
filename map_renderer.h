@@ -6,7 +6,7 @@
 
 using namespace std::literals;
 
-namespace MapRenderer
+namespace map_renderer
 {
 
 struct MapSize {
@@ -24,32 +24,7 @@ struct Route {
     bool operator >=(const Route& other) const;
 };
 
-class RouteMap : public svg::Drawable
-{
-public:
-    RouteMap();
-    void Draw(svg::ObjectContainer& container) const override;
-    RouteMap& SetMapSize(MapSize map_size);
-    RouteMap& SetPadding(double padding);
-    RouteMap& SetLineWidth(double width);
-    RouteMap& SetStopsRadius(double radius);
-    RouteMap& SetStopLabelFontSize(int size);
-    RouteMap& SetBusLabelFontSize(int size);
-    RouteMap& SetStopLabelOffset(double x, double y);
-    RouteMap& SetBusLabelOffset(double x, double y);
-    RouteMap& SetUnderLayerColor(const svg::Color& color);
-    RouteMap& SetUnderLayerWidth(double width);
-    void AddColorToPalette(const svg::Color& color);
-    const Route& AddRoute(const Bus* bus_ptr);
-    void ReorderRouteColors();
-
-private:
-    void DrawRoutesLines(svg::ObjectContainer& container, const Geo::SphereProjector& projector) const;
-    void DrawRoutesNames(svg::ObjectContainer& container, const Geo::SphereProjector& projector) const;
-    void DrawStopCircles(svg::ObjectContainer& container, const Stop& stop, const Geo::SphereProjector& projector) const;
-    void DrawStopName(svg::ObjectContainer& container, const Stop& stop, const Geo::SphereProjector& projector) const;
-    const svg::Color& GetRouteColor() const;
-
+struct MapRendererProps {
     std::map<const std::string*, Route, PtrsComparator<std::string>> routes_;
     std::set<const Stop*, PtrsComparator<Stop>> stops_ptrs_;
     MapSize map_size_;
@@ -67,6 +42,33 @@ private:
     std::vector<svg::Color> color_palette_;
     svg::Color stop_circle_color_ = "white"s;
     svg::Color stop_text_fill_ = "black"s;
+};
+
+class MapRenderer : public svg::Drawable {
+public:
+    MapRenderer();
+    void Draw(svg::ObjectContainer& container) const override;
+    MapRenderer& SetMapSize(MapSize map_size);
+    MapRenderer& SetPadding(double padding);
+    MapRenderer& SetLineWidth(double width);
+    MapRenderer& SetStopsRadius(double radius);
+    MapRenderer& SetStopLabelFontSize(int size);
+    MapRenderer& SetBusLabelFontSize(int size);
+    MapRenderer& SetStopLabelOffset(double x, double y);
+    MapRenderer& SetBusLabelOffset(double x, double y);
+    MapRenderer& SetUnderLayerColor(const svg::Color& color);
+    MapRenderer& SetUnderLayerWidth(double width);
+    void AddColorToPalette(const svg::Color& color);
+    const Route& AddRoute(const Bus* bus_ptr);
+    void ReorderRouteColors();
+
+private:
+    void DrawRoutesLines(svg::ObjectContainer& container, const Geo::SphereProjector& projector) const;
+    void DrawRoutesNames(svg::ObjectContainer& container, const Geo::SphereProjector& projector) const;
+    void DrawStopCircles(svg::ObjectContainer& container, const Stop& stop, const Geo::SphereProjector& projector) const;
+    void DrawStopName(svg::ObjectContainer& container, const Stop& stop, const Geo::SphereProjector& projector) const;
+
+    MapRendererProps props_;
 };
 
 }

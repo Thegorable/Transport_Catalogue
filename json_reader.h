@@ -9,7 +9,7 @@ public:
     JsonReader();
     void ReadBaseJsonRequests(const json::Document& doc, RequestHander& handler);
     void ReadStatJsonRequests(const json::Document& doc, RequestHander& handler);
-    void ReadRenderSettingsJson(const json::Document& doc, MapRenderer::RouteMap& route_map);
+    void ReadRenderSettingsJson(const json::Document& doc, map_renderer::MapRenderer& route_map);
     json::Document BuildStatJsonOutput(const std::vector<std::shared_ptr<Stat>>& answers);
 
 private:
